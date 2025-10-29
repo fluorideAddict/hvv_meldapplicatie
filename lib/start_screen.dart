@@ -18,7 +18,7 @@ class StartScreen extends StatelessWidget {
                 const Spacer(),
                 // Logo
                 Image.asset(
-                  'images/logoHVV2.png',
+                  'assets/images/logoHVV2.png',
                   height: 110,
                 ),
                 const SizedBox(height: 10),

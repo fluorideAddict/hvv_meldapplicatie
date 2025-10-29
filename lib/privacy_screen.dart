@@ -16,7 +16,7 @@ class PrivacyScreen extends StatelessWidget {
               // Logo klein bovenaan
               Center(
                 child: Image.asset(
-                  'images/logoHVV2.png',
+                  'assets/images/logoHVV2.png',
                   height: 60,
                 ),
               ),

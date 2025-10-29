@@ -18,7 +18,7 @@ class OverOnsScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Image.asset(
-                'images/logoHVV2.png',
+                'assets/images/logoHVV2.png',
                 height: 120,
               ),
               const SizedBox(height: 30),

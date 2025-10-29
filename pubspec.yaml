@@ -25,6 +25,7 @@ flutter:
 
   assets:
     - assets/images/logoHVV.png
+    - assets/images/logoHVV2.png
 
   fonts:
     - family: Offside
