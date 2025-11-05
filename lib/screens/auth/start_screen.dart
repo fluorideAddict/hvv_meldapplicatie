@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'privacy_screen.dart';
-import 'over_ons_screen.dart';
+import '../../over_ons_screen.dart';
 
 class StartScreen extends StatelessWidget {
   const StartScreen({Key? key}) : super(key: key);
