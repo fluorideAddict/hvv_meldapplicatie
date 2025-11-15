@@ -29,7 +29,7 @@ class HartVoorVerkeerApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFEAE2D5),
       ),
       //home: const StartScreen(),
-      home: const HomeScreen(),
+      home: const MapWidget(),//HomeScreen(),
       debugShowCheckedModeBanner: false,
     );
   }
