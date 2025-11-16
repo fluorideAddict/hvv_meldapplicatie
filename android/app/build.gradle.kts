@@ -37,7 +37,7 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
-    compileSdkMinor = 1
+    //compileSdkMinor = 1
 }
 
 flutter {
