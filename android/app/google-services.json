@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "23833082834",
+    "project_id": "hart-voor-verkeer",
+    "storage_bucket": "hart-voor-verkeer.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:23833082834:android:82b24c9b58a4001c10e60b",
+        "android_client_info": {
+          "package_name": "com.example.hvv_meldapplicatie"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQe0qbVzJzy6SPmr1-f0ZCJXdltxDWeW4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
