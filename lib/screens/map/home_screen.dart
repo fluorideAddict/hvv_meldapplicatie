@@ -26,34 +26,17 @@ class HomeScreen extends StatelessWidget {
       ),
       body: MapWidget(
         cameraOptions: camera,
-        // styleString: MapboxStyles.MAPBOX_STREETS,
-        // initialCameraPosition: CameraPosition(
-        //   target: _initialPosition,
-        //   zoom: 12,
-        // ),
-        // accessToken: "YOUR_MAPBOX_ACCESS_TOKEN_HERE",
-        // onMapCreated: _onMapCreated,
-        // myLocationEnabled: true,
-        // myLocationTrackingMode: MyLocationTrackingMode.Tracking,
-        // rotateGesturesEnabled: true,
-        // tiltGesturesEnabled: true,
-        // compassEnabled: true,
-        // zoomGesturesEnabled: true,
       ),
 
-      // BOTTOM NAV BAR
-      // bottomNavigationBar: BottomNavigationBar(
-      //   currentIndex: _selectedIndex,
-      //   onTap: _onNavTapped,
-      //   items: const [
-      //     BottomNavigationBarItem(
-      //         icon: Icon(Icons.map), label: "Map"),
-      //     BottomNavigationBarItem(
-      //         icon: Icon(Icons.place), label: "Places"),
-      //     BottomNavigationBarItem(
-      //         icon: Icon(Icons.settings), label: "Settings"),
-      //  ],
-      //),
+      //BOTTOM NAV BAR
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(
+              icon: Icon(Icons.settings), label: "Profile"),
+          BottomNavigationBarItem(
+              icon: Icon(Icons.settings), label: "Settings"),
+       ],
+      ),
     );
   }
 }
