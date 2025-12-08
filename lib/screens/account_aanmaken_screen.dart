@@ -182,45 +182,70 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
   }
 
   void generateRandomUsername() async {
+    if (_isLoading) return; // Voorkom dubbele clicks
+    
     setState(() {
       _isLoading = true;
     });
 
-    final random = Random();
-    int attempts = 0;
-    const maxAttempts = 10;
-    
-    while (attempts < maxAttempts) {
-      final adjective = adjectives[random.nextInt(adjectives.length)];
-      final noun = nouns[random.nextInt(nouns.length)];
-      final number = random.nextInt(9999) + 1;
+    try {
+      final random = Random();
+      int attempts = 0;
+      const maxAttempts = 10;
       
-      final username = '$adjective$noun$number';
-      
-      final isAvailable = await _firebaseService.isUsernameAvailable(username);
-      
-      if (isAvailable) {
-        setState(() {
-          usernameController.text = username;
-          _isLoading = false;
-        });
-        return;
+      while (attempts < maxAttempts) {
+        final adjective = adjectives[random.nextInt(adjectives.length)];
+        final noun = nouns[random.nextInt(nouns.length)];
+        final number = random.nextInt(9999) + 1;
+        
+        final username = '$adjective$noun$number';
+        
+        try {
+          final isAvailable = await _firebaseService.isUsernameAvailable(username);
+          
+          if (isAvailable) {
+            setState(() {
+              usernameController.text = username;
+              _isLoading = false;
+            });
+            return;
+          }
+        } catch (e) {
+          // Als er een error is bij deze specifieke check, probeer gewoon de volgende
+          print('Error checking username $username: $e');
+        }
+        
+        attempts++;
       }
       
-      attempts++;
-    }
-    
-    setState(() {
-      _isLoading = false;
-    });
-    
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Probeer het opnieuw of voer handmatig een gebruikersnaam in'),
-          backgroundColor: Color(0xFF945a7f),
-        ),
-      );
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Kon geen beschikbare gebruikersnaam vinden. Probeer het later opnieuw of voer handmatig een gebruikersnaam in.'),
+            backgroundColor: Color(0xFF945a7f),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      // Vang alle onverwachte errors op
+      print('Unexpected error in generateRandomUsername: $e');
+      setState(() {
+        _isLoading = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Er is een fout opgetreden. Probeer het opnieuw.'),
+            backgroundColor: Color(0xFF945a7f),
+          ),
+        );
+      }
     }
   }
 
@@ -445,7 +470,7 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
                                 fontSize: 15,
                               ),
                               suffixIcon: Padding(
-                                padding: const EdgeInsets.only(right: 15),
+                                padding: const EdgeInsets.only(right: 8),
                                 child: _isLoading
                                     ? const SizedBox(
                                         width: 24,
@@ -461,13 +486,18 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
                                         ),
                                       )
                                     : IconButton(
-                                        onPressed: generateRandomUsername,
+                                        onPressed: () {
+                                          // Unfocus the text field eerst
+                                          FocusScope.of(context).unfocus();
+                                          generateRandomUsername();
+                                        },
                                         icon: const Icon(
                                           Icons.casino,
                                           color: Color(0xFF481d39),
                                           size: 24,
                                         ),
                                         tooltip: 'Genereer random gebruikersnaam',
+                                        splashRadius: 20,
                                       ),
                               ),
                               border: OutlineInputBorder(
