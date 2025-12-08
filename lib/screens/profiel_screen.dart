@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'start_screen.dart';
 
 class ProfielScreen extends StatefulWidget {
   const ProfielScreen({Key? key}) : super(key: key);
@@ -324,8 +325,14 @@ class _ProfielScreenState extends State<ProfielScreen> {
                   // Log uit
                   await _auth.signOut();
 
-                  Navigator.pop(context); // Sluit dialog
-                  Navigator.pop(context); // Ga terug naar homescreen
+                  // Sluit dialog
+                  Navigator.pop(context);
+                  
+                  // Navigeer naar StartScreen en verwijder alle vorige schermen
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) => const StartScreen()),
+                    (route) => false,
+                  );
                 } catch (e) {
                   print('Error deleting account: $e');
                   ScaffoldMessenger.of(context).showSnackBar(
