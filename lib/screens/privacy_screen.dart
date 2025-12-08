@@ -169,34 +169,22 @@ class _PrivacyScreenState extends State<PrivacyScreen> with SingleTickerProvider
                 ),
               ),
               const SizedBox(height: 10),
-              // Text met snellere "reveal" animatie
+              // Text met snellere "reveal" animatie EN scrollable
               Expanded(
-                child: AnimatedBuilder(
-                  animation: _controller,
-                  builder: (context, child) {
-                    return ClipRect(
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        heightFactor: _textReveal.value,
-                        child: Opacity(
-                          opacity: _textOpacity.value,
-                          child: const SingleChildScrollView(
-                            physics: NeverScrollableScrollPhysics(),
-                            child: Text(
-                              'Wij hechten veel waarde aan jouw privacy. De Meldsysteem-app verzamelt alleen gegevens die nodig zijn om verkeersmeldingen mogelijk te maken en de veiligheid in jouw omgeving te verbeteren. Wanneer je een melding maakt, worden locatiegegevens, categorie en beschrijving opgeslagen. De locatie wordt uitsluitend gebruikt om de melding correct op de kaart weer te geven. Je kunt ervoor kiezen om je locatie handmatig in te voeren als je GPS-toegang niet wilt delen.\n\n'
-                                  'Gebruikers kunnen anoniem deelnemen door een willekeurige gebruikersnaam te gebruiken. Persoonlijke informatie zoals je echte naam, adres of contactgegevens is niet vereist. Alle gegevens worden beveiligd opgeslagen en alleen gedeeld met bevoegde beleidsmakers die verantwoordelijk zijn voor verkeersveiligheid. Foto\'s en teksten in meldingen worden uitsluitend gebruikt voor analyse en visualisatie binnen de app.\n\n'
-                                  'Je hebt altijd het recht om je account en bijbehorende gegevens te verwijderen. De app voldoet aan de geldende privacywetgeving (AVG). Door de app te gebruiken ga je akkoord met dit beleid en met het gebruik van jouw gegevens voor de hierboven beschreven doeleinden.',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Color(0xFF481d39),
-                                height: 1.5,
-                              ),
-                            ),
-                          ),
-                        ),
+                child: FadeTransition(
+                  opacity: _textOpacity,
+                  child: SingleChildScrollView(
+                    child: const Text(
+                      'Wij hechten veel waarde aan jouw privacy. De Meldsysteem-app verzamelt alleen gegevens die nodig zijn om verkeersmeldingen mogelijk te maken en de veiligheid in jouw omgeving te verbeteren. Wanneer je een melding maakt, worden locatiegegevens, categorie en beschrijving opgeslagen. De locatie wordt uitsluitend gebruikt om de melding correct op de kaart weer te geven. Je kunt ervoor kiezen om je locatie handmatig in te voeren als je GPS-toegang niet wilt delen.\n\n'
+                          'Gebruikers kunnen anoniem deelnemen door een willekeurige gebruikersnaam te gebruiken. Persoonlijke informatie zoals je echte naam, adres of contactgegevens is niet vereist. Alle gegevens worden beveiligd opgeslagen en alleen gedeeld met bevoegde beleidsmakers die verantwoordelijk zijn voor verkeersveiligheid. Foto\'s en teksten in meldingen worden uitsluitend gebruikt voor analyse en visualisatie binnen de app.\n\n'
+                          'Je hebt altijd het recht om je account en bijbehorende gegevens te verwijderen. De app voldoet aan de geldende privacywetgeving (AVG). Door de app te gebruiken ga je akkoord met dit beleid en met het gebruik van jouw gegevens voor de hierboven beschreven doeleinden.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Color(0xFF481d39),
+                        height: 1.5,
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
