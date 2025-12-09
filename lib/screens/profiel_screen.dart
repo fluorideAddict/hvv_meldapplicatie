@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'start_screen.dart';
+import 'meldingen/mijn_meldingen_screen.dart';
 
 class ProfielScreen extends StatefulWidget {
   const ProfielScreen({Key? key}) : super(key: key);
@@ -443,6 +444,21 @@ class _ProfielScreenState extends State<ProfielScreen> {
                                   icon: Icons.notifications_active,
                                   label: 'Meldingen geplaatst',
                                   value: reportCount.toString(),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildInfoRow(
+                                  icon: Icons.list_alt,
+                                  label: 'Mijn meldingen',
+                                  value: '', // Empty value voor knop
+                                  isButton: true,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => const MijnMeldingenScreen(),
+                                      ),
+                                    );
+                                  },
                                 ),
                                 const SizedBox(height: 16),
                                 // Leeftijdscategorie wijzigen knop

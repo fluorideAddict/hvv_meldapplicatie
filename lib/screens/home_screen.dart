@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import 'package:geolocator/geolocator.dart' as gl;
+import 'meldingen/melding_maken_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -87,7 +88,12 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 70,
                     child: FloatingActionButton(
                       onPressed: () {
-                        // TODO: Melding maken scherm openen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const MeldingMakenScreen(),
+                          ),
+                        );
                       },
                       backgroundColor: const Color(0xFFf5a623),
                       shape: const CircleBorder(),
