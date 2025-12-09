@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hvv_meldapplicatie/screens/map/home_screen.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'start_screen.dart';
+//import 'start_screen.dart';
 //import 'package:location/location.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:firebase_core/firebase_core.dart';

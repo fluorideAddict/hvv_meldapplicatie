@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'account_aanmaken_screen.dart';
+import 'screens/account_aanmaken_screen.dart';
 
 class PrivacyScreen extends StatelessWidget {
   const PrivacyScreen({Key? key}) : super(key: key);
