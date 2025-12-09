@@ -10,8 +10,8 @@ plugins {
 
 android {
     namespace = "com.example.hvv_meldapplicatie"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    compileSdk = 36
+    ndkVersion = "29.0.14206865"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -40,6 +40,7 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+    //compileSdkMinor = 1
 }
 
 flutter {

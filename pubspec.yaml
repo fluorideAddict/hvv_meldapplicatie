@@ -14,9 +14,11 @@ dependencies:
   firebase_core: ^3.8.1
   firebase_auth: ^5.3.3
   cloud_firestore: ^5.5.2
-
   cupertino_icons: ^1.0.8
   flutter_svg: ^2.0.9
+  mapbox_maps_flutter: ^2.0.0
+  geolocator: ^14.0.2
+  flutter_dotenv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -34,6 +36,8 @@ flutter:
     - assets/images/icoon2.png
     - assets/images/icoon3.png
 
+    - assets/images/logoHVV2.png
+    - ./.env
 
   fonts:
     - family: Offside
