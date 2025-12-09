@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:hvv_meldapplicatie/screens/map/home_screen.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-//import 'start_screen.dart';
-//import 'package:location/location.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'screens/start_screen.dart';
+//import 'package:hvv_meldapplicatie/screens/map/home_screen.dart';
+import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,7 +32,7 @@ class HartVoorVerkeerApp extends StatelessWidget {
         primaryColor: const Color(0xFF481d39),
         scaffoldBackgroundColor: const Color(0xFFEAE2D5),
       ),
-      home: const StartScreen(),
+      home: const HomeScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

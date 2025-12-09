@@ -1,9 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'profiel_screen.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
+import 'package:geolocator/geolocator.dart' as gl;
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({Key? key}) : super(key: key);
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  mb.MapboxMap? mapboxMapController;
+
+  StreamSubscription? userPositionStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _determinePosition();
+  }
+  @override
+  void dispose() {
+    userPositionStream?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,41 +73,9 @@ class HomeScreen extends StatelessWidget {
           Expanded(
             child: Stack(
               children: [
-                // Hier komt later de kaart
                 Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'Je huidige locatie',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF481d39),
-                          fontFamily: 'Offside',
-                        ),
-                      ),
-                      const SizedBox(height: 40),
-                      const Text(
-                        'Klik op het uitroepteken om een',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF481d39),
-                          fontFamily: 'Offside',
-                        ),
-                      ),
-                      const Text(
-                        'melding te maken!',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF481d39),
-                          fontFamily: 'Offside',
-                        ),
-                      ),
-                    ],
+                  child: mb.MapWidget(
+                    onMapCreated: _onMapCreated,
                   ),
                 ),
                 // Floating action button voor melding maken
@@ -176,6 +168,88 @@ class HomeScreen extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  void _onMapCreated(mb.MapboxMap controller) {
+    setState(() {
+      mapboxMapController = controller;
+    });
+    mapboxMapController?.location.updateSettings(
+      mb.LocationComponentSettings(
+        enabled: true,
+      ),
+    );
+    mapboxMapController?.scaleBar.updateSettings(
+      mb.ScaleBarSettings(
+        enabled: false,
+      ),
+    );
+  }
+
+  /// Determine the current position of the device.
+  ///
+  /// When the location services are not enabled or permissions
+  /// are denied the `Future` will return an error.
+  Future<void> _determinePosition() async {
+    bool serviceEnabled;
+    gl.LocationPermission permission;
+
+    // Test if location services are enabled.
+    serviceEnabled = await gl.Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      // Location services are not enabled don't continue
+      // accessing the position and request users of the
+      // App to enable the location services.
+      return Future.error('Location services are disabled.');
+    }
+
+    permission = await gl.Geolocator.checkPermission();
+    if (permission == gl.LocationPermission.denied) {
+      permission = await gl.Geolocator.requestPermission();
+      if (permission == gl.LocationPermission.denied) {
+        // Permissions are denied, next time you could try
+        // requesting permissions again (this is also where
+        // Android's shouldShowRequestPermissionRationale
+        // returned true. According to Android guidelines
+        // your App should show an explanatory UI now.
+        return Future.error('Location permissions are denied');
+      }
+    }
+    if (permission == gl.LocationPermission.deniedForever) {
+      // Permissions are denied forever, handle appropriately.
+      return Future.error(
+          'Location permissions are permanently denied, we cannot request permissions.');
+    }
+    gl.LocationSettings locationSettings = gl.LocationSettings(
+      accuracy: gl.LocationAccuracy.high,
+      distanceFilter: 100,
+    );
+    // When we reach here, permissions are granted and we can
+    // continue accessing the position of the device.
+
+    userPositionStream?.cancel();
+    userPositionStream = gl.Geolocator.getPositionStream(
+        locationSettings: locationSettings).listen(
+          (
+          gl.Position? position,
+          ) {
+        if (position != null && mapboxMapController != null) {
+          mapboxMapController?.setCamera(
+              mb.CameraOptions(
+                  center: mb.Point(
+                      coordinates: mb.Position(
+                        position.longitude,
+                        position.latitude,
+                      )
+                  ),
+                  zoom: 15,
+                  bearing: 0,
+                  pitch: 0
+              )
+          );
+        }
+      },
     );
   }
 }
