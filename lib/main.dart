@@ -4,6 +4,7 @@ import 'firebase_options.dart';
 import 'screens/start_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
+import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +30,9 @@ class HartVoorVerkeerApp extends StatelessWidget {
         primaryColor: const Color(0xFF481d39),
         scaffoldBackgroundColor: const Color(0xFFEAE2D5),
       ),
-      home: const StartScreen(),
+      //home: const StartScreen(),
+      //CHANGE BACK TO THIS AFTER^
+      home: const HomeScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

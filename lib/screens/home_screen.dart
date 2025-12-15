@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'profiel_screen.dart';
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import 'package:geolocator/geolocator.dart' as gl;
 import 'meldingen/melding_maken_screen.dart';
+import '../services/melding_service.dart';
+import '../models/melding_model.dart';
+import 'dart:developer'; //this package is for development only
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,9 +18,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final MeldingService _meldingService = MeldingService();
   mb.MapboxMap? mapboxMapController;
-
   StreamSubscription? userPositionStream;
+  StreamSubscription<List<Melding>>? meldingenStream;
+  mb.PointAnnotationManager? pointAnnotationManager;
+  Uint8List? mapMarkerImageData;
+  List<Melding> renderedMeldingen = <Melding>[];
 
   @override
   void initState() {
@@ -26,6 +33,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
   @override
   void dispose() {
+    meldingenStream?.cancel();
     userPositionStream?.cancel();
     super.dispose();
   }
@@ -177,7 +185,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _onMapCreated(mb.MapboxMap controller) {
+  void _onMapCreated(mb.MapboxMap controller) async {
+    final ByteData bytes = await rootBundle.load("assets/images/map-marker2.png");
+    mapMarkerImageData = bytes.buffer.asUint8List();
+    pointAnnotationManager = await controller.annotations.createPointAnnotationManager();
+
     setState(() {
       mapboxMapController = controller;
     });
@@ -191,6 +203,52 @@ class _HomeScreenState extends State<HomeScreen> {
         enabled: false,
       ),
     );
+
+    _showMeldingenOnMap();
+  }
+
+  void _showMeldingenOnMap() async {
+    meldingenStream?.cancel();
+    //await Future.delayed(const Duration(seconds: 1));
+    //List<Melding> meldingenList = <Melding>[];
+    //pointAnnotationManager?.deleteAll();
+    meldingenStream = _meldingService.getAllMeldingen().listen((List<Melding> meldingen) {
+      if (!mounted) return;
+
+      pointAnnotationManager?.deleteAll();
+
+      for (final melding in meldingen) {
+        final pointAnnotationOptions = mb.PointAnnotationOptions(
+          geometry: mb.Point(
+            coordinates: mb.Position(
+              melding.longitude,
+              melding.latitude,
+            ),
+          ),
+          image: mapMarkerImageData,
+          //iconSize: 3.0,
+        );
+        Future<mb.PointAnnotation>? pointAnnotation = pointAnnotationManager?.create(pointAnnotationOptions);
+      }
+    }, onError: (e, stack) {
+      print("Meldingen stream error: $e");
+      print(stack.toString());
+    });
+    // await Future.delayed(const Duration(seconds: 5));
+    // for (var i = 0; i < meldingenList.length; i++) {
+    //   var melding = meldingenList[i];
+    //   print(melding);
+    //   mb.PointAnnotationOptions pointAnnotationOptions = mb.PointAnnotationOptions(
+    //       geometry: mb.Point(coordinates: mb.Position(
+    //           melding.longitude,
+    //           melding.latitude)
+    //       ),
+    //       //iconImage: Icon(Icons.warning).semanticLabel,
+    //       image: mapMarkerImageData,
+    //       iconSize: 3.0
+    //   );
+    //   pointAnnotationManager?.create(pointAnnotationOptions);
+    // }
   }
 
   /// Determine the current position of the device.

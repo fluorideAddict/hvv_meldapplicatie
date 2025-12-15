@@ -37,8 +37,10 @@ flutter:
     - assets/images/icoon1.png
     - assets/images/icoon2.png
     - assets/images/icoon3.png
-
     - assets/images/logoHVV2.png
+    - assets/images/map-marker.png
+    - assets/images/map-marker2.png
+
     - ./.env
 
   fonts:
