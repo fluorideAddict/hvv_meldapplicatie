@@ -8,7 +8,6 @@ import 'package:geolocator/geolocator.dart' as gl;
 import 'meldingen/melding_maken_screen.dart';
 import '../services/melding_service.dart';
 import '../models/melding_model.dart';
-import 'dart:developer'; //this package is for development only
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -85,6 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Center(
                   child: mb.MapWidget(
                     onMapCreated: _onMapCreated,
+                    onTapListener: _onMapTap,
                   ),
                 ),
                 // Floating action button voor melding maken
@@ -206,6 +206,35 @@ class _HomeScreenState extends State<HomeScreen> {
 
     _showMeldingenOnMap();
   }
+  Future<void> _onMapTap(mb.ScreenCoordinate screenCoordinate) async {
+    final queryGeometry =
+    mb.RenderedQueryGeometry.fromScreenCoordinate(screenCoordinate);
+
+    final results = await mapboxMapController?.queryRenderedFeatures(
+      queryGeometry,
+      mb.RenderedQueryOptions(
+        layerIds: null,
+        filter: null,
+      ),
+    );
+
+    if (results == null || results.isEmpty) return;
+
+    for (final queried in results) {
+      final sourceFeature = queried?.sourceFeature;
+      if (sourceFeature == null) continue;
+
+      final properties = sourceFeature.properties;
+      if (properties == null) continue;
+
+      // userInfo from PointAnnotation ends up here
+      if (properties.containsKey('meldingId')) {
+        final meldingId = properties['meldingId'];
+        _onMeldingTapped(meldingId);
+        break;
+      }
+    }
+  }
 
   void _showMeldingenOnMap() async {
     meldingenStream?.cancel();
@@ -217,6 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       pointAnnotationManager?.deleteAll();
 
+      //TODO: Store all melding data locally? It's ID at least? This way it does not need to be requested everytime
       for (final melding in meldingen) {
         final pointAnnotationOptions = mb.PointAnnotationOptions(
           geometry: mb.Point(
@@ -231,24 +261,10 @@ class _HomeScreenState extends State<HomeScreen> {
         Future<mb.PointAnnotation>? pointAnnotation = pointAnnotationManager?.create(pointAnnotationOptions);
       }
     }, onError: (e, stack) {
+      //Pop up notification?
       print("Meldingen stream error: $e");
       print(stack.toString());
     });
-    // await Future.delayed(const Duration(seconds: 5));
-    // for (var i = 0; i < meldingenList.length; i++) {
-    //   var melding = meldingenList[i];
-    //   print(melding);
-    //   mb.PointAnnotationOptions pointAnnotationOptions = mb.PointAnnotationOptions(
-    //       geometry: mb.Point(coordinates: mb.Position(
-    //           melding.longitude,
-    //           melding.latitude)
-    //       ),
-    //       //iconImage: Icon(Icons.warning).semanticLabel,
-    //       image: mapMarkerImageData,
-    //       iconSize: 3.0
-    //   );
-    //   pointAnnotationManager?.create(pointAnnotationOptions);
-    // }
   }
 
   /// Determine the current position of the device.
