@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../models/melding_model.dart';
 import '../../services/melding_service.dart';
 import '../../widgets/meldingen/melding_card.dart';
+import '../profiel_screen.dart';
+import '../home_screen.dart';
 
 class MijnMeldingenScreen extends StatefulWidget {
   const MijnMeldingenScreen({Key? key}) : super(key: key);
@@ -17,164 +19,215 @@ class _MijnMeldingenScreenState extends State<MijnMeldingenScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFeae2d5),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFbd213f),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Mijn meldingen',
-          style: TextStyle(
-            fontFamily: 'Oswald',
-            fontSize: 22,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+      body: Column(
+        children: [
+          Container(
+            color: const Color(0xFFbd213f),
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+            child: SafeArea(
+              bottom: false,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/images/logoHVV2.png',
+                    height: 50,
+                  ),
+                ],
+              ),
+            ),
           ),
-        ),
-        centerTitle: true,
-      ),
-      body: StreamBuilder<List<Melding>>(
-        stream: _meldingService.getUserMeldingen(),
-        builder: (context, snapshot) {
-          // Loading state
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFF481d39),
-              ),
-            );
-          }
-
-          // Error state
-          if (snapshot.hasError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.error_outline,
-                      size: 64,
-                      color: Color(0xFFbd213f),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Er is een fout opgetreden',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      snapshot.error.toString(),
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }
-
-          // Empty state
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return EmptyMeldingenState(
-              message: 'Je hebt nog geen meldingen gemaakt',
-              actionText: 'Maak je eerste melding',
-              onActionPressed: () {
-                Navigator.pop(context);
-                // Trigger melding maken via home screen
-              },
-            );
-          }
-
-          // Success state - show list
-          final meldingen = snapshot.data!;
-
-          return Column(
-            children: [
-              // Statistics header
-              _buildStatisticsHeader(meldingen.length),
-
-              // List of meldingen
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () async {
-                    // Stream updates automatically
-                    await Future.delayed(const Duration(milliseconds: 500));
-                  },
-                  color: const Color(0xFF481d39),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.only(top: 8, bottom: 80),
-                    itemCount: meldingen.length,
-                    itemBuilder: (context, index) {
-                      final melding = meldingen[index];
-                      return MeldingCard(
-                        melding: melding,
-                        onTap: () => _showMeldingDetails(context, melding),
-                        onDelete: () => _confirmDelete(context, melding),
-                        showDeleteButton: true,
+          Expanded(
+            child: Stack(
+              children: [
+                StreamBuilder<List<Melding>>(
+                  stream: _meldingService.getUserMeldingen(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF481d39),
+                        ),
                       );
-                    },
+                    }
+
+                    if (snapshot.hasError) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: Color(0xFFbd213f),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Er is een fout opgetreden',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.grey[700],
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                snapshot.error.toString(),
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'Je hebt nog geen meldingen gemaakt',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      );
+                    }
+
+                    final meldingen = snapshot.data!;
+
+                    return Column(
+                      children: [
+                        _buildStatisticsHeader(meldingen.length),
+
+                        Expanded(
+                          child: RefreshIndicator(
+                            onRefresh: () async {
+                              await Future.delayed(const Duration(milliseconds: 500));
+                            },
+                            color: const Color(0xFF481d39),
+                            child: ListView.builder(
+                              padding: const EdgeInsets.only(top: 8, bottom: 80),
+                              itemCount: meldingen.length,
+                              itemBuilder: (context, index) {
+                                final melding = meldingen[index];
+                                return MeldingCard(
+                                  melding: melding,
+                                  onTap: () => _showMeldingDetails(context, melding),
+                                  onDelete: () => _confirmDelete(context, melding),
+                                  showDeleteButton: true,
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    color: const Color(0xFFbd213f),
+                    child: SafeArea(
+                      top: false,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            IconButton(
+                              onPressed: () {
+                                Navigator.pushAndRemoveUntil(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const HomeScreen()),
+                                      (route) => false,
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.home,
+                                color: Colors.black,
+                                size: 32,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                              },
+                              icon: const Icon(
+                                Icons.public,
+                                color: Colors.black,
+                                size: 32,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                              },
+                              icon: const Icon(
+                                Icons.inbox,
+                                color: Colors.black,
+                                size: 32,
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const ProfielScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(
+                                Icons.person,
+                                color: Colors.black,
+                                size: 32,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-
-  /// Header met statistieken
-  Widget _buildStatisticsHeader(int totalMeldingen) {
-    return Container(
-      color: const Color(0xFFf5a623).withOpacity(0.2),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem(
-            icon: Icons.notifications_active,
-            label: 'Totaal',
-            value: totalMeldingen.toString(),
-          ),
-          Container(
-            width: 1,
-            height: 40,
-            color: Colors.grey[400],
-          ),
-          _buildStatItem(
-            icon: Icons.pending,
-            label: 'In behandeling',
-            value: totalMeldingen.toString(),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatItem({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Column(
-      children: [
-        Row(
+  Widget _buildStatisticsHeader(int totalMeldingen) {
+    return Container(
+      color: const Color(0xFFeae2d5), // Zelfde kleur als achtergrond
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      child: Center(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: const Color(0xFF481d39), size: 20),
-            const SizedBox(width: 8),
+            const Icon(
+              Icons.notifications_active,
+              color: Color(0xFF481d39),
+              size: 26,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Totaal',
+              style: TextStyle(
+                fontSize: 22,
+                color: Color(0xFF481d39),
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Oswald',
+              ),
+            ),
+            const SizedBox(width: 10),
             Text(
-              value,
+              totalMeldingen.toString(),
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -184,30 +237,19 @@ class _MijnMeldingenScreenState extends State<MijnMeldingenScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[700],
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
-  /// Toon details van een melding
   void _showMeldingDetails(BuildContext context, Melding melding) {
-    showModalBottomSheet(
+    showDialog(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => _MeldingDetailsSheet(melding: melding),
+      barrierDismissible: true,
+      barrierColor: Colors.black.withOpacity(0.5),
+      builder: (context) => MeldingDetailPopup(melding: melding),
     );
   }
 
-  /// Bevestig verwijderen van een melding
   void _confirmDelete(BuildContext context, Melding melding) {
     showDialog(
       context: context,
@@ -266,9 +308,7 @@ class _MijnMeldingenScreenState extends State<MijnMeldingenScreen> {
     );
   }
 
-  /// Verwijder een melding
   Future<void> _deleteMelding(Melding melding) async {
-    // Show loading
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Melding wordt verwijderd...'),
@@ -297,252 +337,290 @@ class _MijnMeldingenScreenState extends State<MijnMeldingenScreen> {
   }
 }
 
-/// Bottom sheet met melding details
-class _MeldingDetailsSheet extends StatelessWidget {
+class MeldingDetailPopup extends StatelessWidget {
   final Melding melding;
 
-  const _MeldingDetailsSheet({
+  const MeldingDetailPopup({
     Key? key,
     required this.melding,
   }) : super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Color(0xFFeae2d5),
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(20),
-        ),
-      ),
-      child: DraggableScrollableSheet(
-        initialChildSize: 0.8,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) {
-          return SingleChildScrollView(
-            controller: scrollController,
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Drag handle
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      margin: const EdgeInsets.only(bottom: 20),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[400],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
+  String _getFormattedDateTime() {
+    final months = [
+      'januari', 'februari', 'maart', 'april', 'mei', 'juni',
+      'juli', 'augustus', 'september', 'oktober', 'november', 'december'
+    ];
 
-                  // Category badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF481d39).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFF481d39),
-                        width: 2,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          MeldingCategories.getCategoryById(melding.category)?['icon'] ?? '📋',
-                          style: const TextStyle(fontSize: 20),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          melding.getCategoryDisplayName(),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF481d39),
-                            fontFamily: 'Oswald',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+    final day = melding.createdAt.day;
+    final month = months[melding.createdAt.month - 1];
+    final year = melding.createdAt.year;
+    final hour = melding.createdAt.hour.toString().padLeft(2, '0');
+    final minute = melding.createdAt.minute.toString().padLeft(2, '0');
 
-                  const SizedBox(height: 16),
-
-                  // Beschrijving
-                  const Text(
-                    'Beschrijving',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF481d39),
-                      fontFamily: 'Oswald',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    melding.description,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      height: 1.5,
-                      color: Color(0xFF481d39),
-                    ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Locatie
-                  _buildDetailRow(
-                    icon: Icons.location_on,
-                    label: 'Locatie',
-                    value: melding.address,
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Datum
-                  _buildDetailRow(
-                    icon: Icons.calendar_today,
-                    label: 'Gemeld op',
-                    value: melding.getFormattedDate(),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // Status
-                  _buildDetailRow(
-                    icon: Icons.info_outline,
-                    label: 'Status',
-                    value: _getStatusText(melding.status),
-                  ),
-
-                  // Foto's
-                  if (melding.photoUrls.isNotEmpty) ...[
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Foto\'s',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF481d39),
-                        fontFamily: 'Oswald',
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 100,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: melding.photoUrls.length,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Image.network(
-                                melding.photoUrls[index],
-                                width: 100,
-                                height: 100,
-                                fit: BoxFit.cover,
-                                loadingBuilder: (context, child, loadingProgress) {
-                                  if (loadingProgress == null) return child;
-                                  return Container(
-                                    width: 100,
-                                    height: 100,
-                                    color: Colors.grey[300],
-                                    child: const Center(
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 24),
-
-                  // Close button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF481d39),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Text(
-                        'Sluiten',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Oswald',
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
+    return '$day $month $year om $hour:$minute';
   }
 
-  Widget _buildDetailRow({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(
-          icon,
-          size: 20,
-          color: const Color(0xFF481d39),
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 40),
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFeae2d5),
+          borderRadius: BorderRadius.circular(20),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w600,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(8),
+                child: IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(
+                    Icons.close,
+                    color: Color(0xFF481d39),
+                    size: 28,
+                  ),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
               ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF481d39),
-                  fontWeight: FontWeight.w600,
+            ),
+
+            Flexible(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Flexible(
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF481d39).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color: const Color(0xFF481d39),
+                                      width: 1.5,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        MeldingCategories.getCategoryById(melding.category)?['icon'] ?? '📋',
+                                        style: const TextStyle(fontSize: 18),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Flexible(
+                                        child: Text(
+                                          melding.getCategoryDisplayName(),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFF481d39),
+                                            fontFamily: 'Oswald',
+                                          ),
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.access_time,
+                                size: 16,
+                                color: Color(0xFF481d39),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  _getFormattedDateTime(),
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Color(0xFF481d39),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 16),
+                          const Divider(),
+                          const SizedBox(height: 16),
+
+                          Text(
+                            melding.description,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              color: Color(0xFF481d39),
+                              height: 1.5,
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                size: 18,
+                                color: Color(0xFFbd213f),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  melding.address,
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.info_outline,
+                                size: 18,
+                                color: Color(0xFF481d39),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Status: ',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              Text(
+                                _getStatusText(melding.status),
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF481d39),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          if (melding.photoUrls.isNotEmpty) ...[
+                            const SizedBox(height: 20),
+                            const Divider(),
+                            const SizedBox(height: 16),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.photo_library,
+                                  size: 18,
+                                  color: Color(0xFFf5a623),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Bijgevoegde foto\'s (${melding.photoUrls.length})',
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF481d39),
+                                    fontFamily: 'Oswald',
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 10,
+                                mainAxisSpacing: 10,
+                                childAspectRatio: 1,
+                              ),
+                              itemCount: melding.photoUrls.length,
+                              itemBuilder: (context, index) {
+                                return ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.network(
+                                    melding.photoUrls[index],
+                                    fit: BoxFit.cover,
+                                    loadingBuilder: (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Container(
+                                        color: Colors.grey[300],
+                                        child: const Center(
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            color: Color(0xFF481d39),
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        color: Colors.grey[300],
+                                        child: const Icon(
+                                          Icons.error_outline,
+                                          color: Colors.grey,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 

@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'profiel_screen.dart';
+import 'inbox_screen.dart';
 import 'dart:async';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import 'package:geolocator/geolocator.dart' as gl;
 import 'meldingen/melding_maken_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../services/melding_service.dart';
 import '../models/melding_model.dart';
 
@@ -25,11 +28,15 @@ class _HomeScreenState extends State<HomeScreen> {
   Uint8List? mapMarkerImageData;
   List<Melding> renderedMeldingen = <Melding>[];
 
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   @override
   void initState() {
     super.initState();
     _determinePosition();
   }
+
   @override
   void dispose() {
     meldingenStream?.cancel();
@@ -148,17 +155,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         size: 32,
                       ),
                     ),
-                    // Inbox/berichten icoon
-                    IconButton(
-                      onPressed: () {
-                        // TODO: Navigeer naar berichten
-                      },
-                      icon: const Icon(
-                        Icons.inbox,
-                        color: Colors.black,
-                        size: 32,
-                      ),
-                    ),
+                    // Inbox/berichten icoon met badge
+                    _buildInboxIconWithBadge(),
                     // Profiel icoon
                     IconButton(
                       onPressed: () {
@@ -182,6 +180,86 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildInboxIconWithBadge() {
+    final currentUser = _auth.currentUser;
+
+    if (currentUser == null) {
+      return IconButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const InboxScreen(),
+            ),
+          );
+        },
+        icon: const Icon(
+          Icons.inbox,
+          color: Colors.black,
+          size: 32,
+        ),
+      );
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore
+          .collection('notifications')
+          .where('userId', isEqualTo: currentUser.uid)
+          .where('isRead', isEqualTo: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final unreadCount = snapshot.data?.docs.length ?? 0;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const InboxScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(
+                Icons.inbox,
+                color: Colors.black,
+                size: 32,
+              ),
+            ),
+            if (unreadCount > 0)
+              Positioned(
+                right: 6,
+                top: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFf5a623),
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Center(
+                    child: Text(
+                      unreadCount > 9 ? '9+' : '$unreadCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 

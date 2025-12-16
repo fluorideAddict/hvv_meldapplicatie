@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'firebase_options.dart';
 import 'screens/start_screen.dart';
+import 'screens/home_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'screens/home_screen.dart';
 import 'services/firebase_service.dart';
 
 void main() async {
@@ -17,7 +18,7 @@ void main() async {
 }
 
 Future<void> setup() async {
-  await dotenv.load(fileName: ".env",);
+  await dotenv.load(fileName: ".env");
   MapboxOptions.setAccessToken(dotenv.env["MAPBOX_ACCESS_TOKEN"]!);
 }
 
@@ -40,7 +41,7 @@ class HartVoorVerkeerApp extends StatelessWidget {
         primaryColor: const Color(0xFF481d39),
         scaffoldBackgroundColor: const Color(0xFFEAE2D5),
       ),
-      home: determineNextPage(),
+      home: const StartScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

@@ -182,7 +182,7 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
   }
 
   void generateRandomUsername() async {
-    if (_isLoading) return; // Voorkom dubbele clicks
+    if (_isLoading) return;
     
     setState(() {
       _isLoading = true;
@@ -201,7 +201,16 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
         final username = '$adjective$noun$number';
         
         try {
-          final isAvailable = await _firebaseService.isUsernameAvailable(username);
+          // Voeg timeout toe!
+          final isAvailable = await _firebaseService
+              .isUsernameAvailable(username)
+              .timeout(
+                const Duration(seconds: 5),
+                onTimeout: () {
+                  print('Timeout checking username $username');
+                  return false;
+                },
+              );
           
           if (isAvailable) {
             setState(() {
@@ -211,7 +220,6 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
             return;
           }
         } catch (e) {
-          // Als er een error is bij deze specifieke check, probeer gewoon de volgende
           print('Error checking username $username: $e');
         }
         
@@ -232,7 +240,6 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
         );
       }
     } catch (e) {
-      // Vang alle onverwachte errors op
       print('Unexpected error in generateRandomUsername: $e');
       setState(() {
         _isLoading = false;
@@ -487,7 +494,6 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
                                       )
                                     : IconButton(
                                         onPressed: () {
-                                          // Unfocus the text field eerst
                                           FocusScope.of(context).unfocus();
                                           generateRandomUsername();
                                         },
