@@ -84,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Center(
                   child: mb.MapWidget(
                     onMapCreated: _onMapCreated,
-                    onTapListener: _onMapTap,
+                    //onTapListener: _onMapTap,
                   ),
                 ),
                 // Floating action button voor melding maken
@@ -190,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
     mapMarkerImageData = bytes.buffer.asUint8List();
     pointAnnotationManager = await controller.annotations.createPointAnnotationManager();
 
-    pointAnnotationManager!.addOnPointAnnotationClickListener(
+    /*pointAnnotationManager!.addOnPointAnnotationClickListener(
           (mb.PointAnnotation annotation) {
         final userInfo = annotation.userInfo;
         if (userInfo == null) return false;
@@ -200,7 +200,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
         return true;
       },
-    );
+    );*/
 
     setState(() {
       mapboxMapController = controller;
@@ -218,7 +218,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
     _showMeldingenOnMap();
   }
-  Future<void> _onMapTap(mb.ScreenCoordinate screenCoordinate) async {
+
+  /*Future<void> _onMapTap(mb.ScreenCoordinate screenCoordinate) async {
     final queryGeometry =
     mb.RenderedQueryGeometry.fromScreenCoordinate(screenCoordinate);
 
@@ -246,7 +247,7 @@ class _HomeScreenState extends State<HomeScreen> {
         break;
       }
     }
-  }
+  }*/
 
   void _showMeldingenOnMap() async {
     meldingenStream?.cancel();
