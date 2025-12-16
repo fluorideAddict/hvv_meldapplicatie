@@ -76,6 +76,18 @@ class MeldingService {
       // Sla op in Firestore
       await meldingRef.set(melding.toFirestore());
 
+      print('🔔 Creating notification...');
+      // Maak notificatie aan
+      await _firestore.collection('notifications').add({
+        'userId': currentUser.uid,
+        'type': 'report_created',
+        'title': 'Melding geplaatst!',
+        'message': 'Je melding over ${_getCategoryDisplayName(category)} is succesvol geplaatst',
+        'meldingId': meldingId,
+        'isRead': false,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
       print('✅ Melding created successfully!');
       return {
         'success': true,
@@ -88,6 +100,26 @@ class MeldingService {
         'success': false,
         'error': 'Er is een fout opgetreden bij het aanmaken van de melding: $e',
       };
+    }
+  }
+
+  String _getCategoryDisplayName(String category) {
+    // Helper functie om mooie namen te geven aan categorieën in notificaties
+    switch (category.toLowerCase()) {
+      case 'graffiti':
+        return 'graffiti';
+      case 'zwerfafval':
+        return 'zwerfafval';
+      case 'straatverlichting':
+        return 'straatverlichting';
+      case 'stoeptegel':
+        return 'stoeptegels';
+      case 'hondenpoep':
+        return 'hondenpoep';
+      case 'fietswrak':
+        return 'fietswrakken';
+      default:
+        return category.toLowerCase();
     }
   }
 
@@ -132,6 +164,7 @@ class MeldingService {
       return null;
     }
   }
+
   Future<bool> updateMelding(String meldingId, Map<String, dynamic> updates) async {
     try {
       await _firestore.collection('meldingen').doc(meldingId).update(updates);
@@ -142,6 +175,7 @@ class MeldingService {
       return false;
     }
   }
+
   Future<bool> deleteMelding(String meldingId) async {
     try {
       print('🗑️ Deleting melding...');
@@ -158,6 +192,16 @@ class MeldingService {
         await _storageService.deleteMultiplePhotos(melding.photoUrls);
       }
 
+      // Verwijder gerelateerde notificaties
+      final notificationsSnapshot = await _firestore
+          .collection('notifications')
+          .where('meldingId', isEqualTo: meldingId)
+          .get();
+
+      for (var doc in notificationsSnapshot.docs) {
+        await doc.reference.delete();
+      }
+
       // Verwijder melding document
       await _firestore.collection('meldingen').doc(meldingId).delete();
 
@@ -168,6 +212,7 @@ class MeldingService {
       return false;
     }
   }
+
   Future<int> countUserMeldingen({String? userId}) async {
     try {
       final uid = userId ?? _auth.currentUser?.uid;
@@ -221,5 +266,20 @@ class MeldingService {
         .map((snapshot) {
       return snapshot.docs.map((doc) => Melding.fromFirestore(doc)).toList();
     });
+  }
+
+  // Helper functie om aantal ongelezen notificaties te krijgen
+  Stream<int> getUnreadNotificationCount() {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      return Stream.value(0);
+    }
+
+    return _firestore
+        .collection('notifications')
+        .where('userId', isEqualTo: currentUser.uid)
+        .where('isRead', isEqualTo: false)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.length);
   }
 }

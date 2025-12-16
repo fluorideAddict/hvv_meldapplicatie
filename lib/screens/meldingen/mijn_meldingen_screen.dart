@@ -204,44 +204,30 @@ class _MijnMeldingenScreenState extends State<MijnMeldingenScreen> {
 
   Widget _buildStatisticsHeader(int totalMeldingen) {
     return Container(
-      color: const Color(0xFFf5a623).withOpacity(0.2),
-      padding: const EdgeInsets.all(16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          _buildStatItem(
-            icon: Icons.notifications_active,
-            label: 'Totaal',
-            value: totalMeldingen.toString(),
-          ),
-          Container(
-            width: 1,
-            height: 40,
-            color: Colors.grey[400],
-          ),
-          _buildStatItem(
-            icon: Icons.pending,
-            label: 'In behandeling',
-            value: totalMeldingen.toString(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatItem({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Column(
-      children: [
-        Row(
+      color: const Color(0xFFeae2d5), // Zelfde kleur als achtergrond
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+      child: Center(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: const Color(0xFF481d39), size: 20),
-            const SizedBox(width: 8),
+            const Icon(
+              Icons.notifications_active,
+              color: Color(0xFF481d39),
+              size: 26,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Totaal',
+              style: TextStyle(
+                fontSize: 22,
+                color: Color(0xFF481d39),
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Oswald',
+              ),
+            ),
+            const SizedBox(width: 10),
             Text(
-              value,
+              totalMeldingen.toString(),
               style: const TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -251,16 +237,7 @@ class _MijnMeldingenScreenState extends State<MijnMeldingenScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey[700],
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
+      ),
     );
   }
 

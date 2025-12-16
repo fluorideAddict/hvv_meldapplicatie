@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'start_screen.dart';
 import 'meldingen/mijn_meldingen_screen.dart';
+import 'inbox_screen.dart';
 
 class ProfielScreen extends StatefulWidget {
   const ProfielScreen({Key? key}) : super(key: key);
@@ -29,11 +30,11 @@ class _ProfielScreenState extends State<ProfielScreen> {
 
   Future<void> _loadUserData() async {
     print('🔍 Starting to load user data...');
-    
+
     try {
       final currentUser = _auth.currentUser;
       print('👤 Current user: ${currentUser?.uid}');
-      
+
       if (currentUser == null) {
         print('❌ No user logged in!');
         setState(() {
@@ -47,11 +48,11 @@ class _ProfielScreenState extends State<ProfielScreen> {
       print('📡 Fetching user data from Firestore...');
       final userData = await _firestore.collection('users').doc(currentUser.uid).get();
       print('📄 User document exists: ${userData.exists}');
-      
+
       if (userData.exists) {
         final data = userData.data()!;
         print('✅ User data: $data');
-        
+
         // Bereken aantal meldingen
         print('📊 Counting reports...');
         final reportsSnapshot = await _firestore
@@ -65,8 +66,8 @@ class _ProfielScreenState extends State<ProfielScreen> {
         String formattedDate = 'Onbekend';
         if (createdAt != null) {
           final date = createdAt.toDate();
-          final months = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 
-                         'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+          final months = ['januari', 'februari', 'maart', 'april', 'mei', 'juni',
+            'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
           formattedDate = '${date.day} ${months[date.month - 1]} ${date.year}';
         }
 
@@ -77,7 +78,7 @@ class _ProfielScreenState extends State<ProfielScreen> {
           memberSince = formattedDate;
           reportCount = reportsSnapshot.docs.length;
         });
-        
+
         print('✅ Data loaded successfully!');
       } else {
         print('❌ User document does not exist!');
@@ -185,7 +186,7 @@ class _ProfielScreenState extends State<ProfielScreen> {
 
   Widget _buildAgeCategoryOption(String value, String displayText) {
     final isSelected = value == ageCategory;
-    
+
     return InkWell(
       onTap: () async {
         try {
@@ -223,7 +224,7 @@ class _ProfielScreenState extends State<ProfielScreen> {
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.5),
           borderRadius: BorderRadius.circular(12),
-          border: isSelected 
+          border: isSelected
               ? Border.all(color: const Color(0xFF481d39), width: 2)
               : null,
         ),
@@ -307,7 +308,7 @@ class _ProfielScreenState extends State<ProfielScreen> {
 
                   // Verwijder gebruikersdata uit Firestore
                   await _firestore.collection('users').doc(currentUser.uid).delete();
-                  
+
                   // Verwijder username reservering
                   if (usernameToDelete != null) {
                     await _firestore.collection('usernames').doc(usernameToDelete.toLowerCase()).delete();
@@ -318,8 +319,18 @@ class _ProfielScreenState extends State<ProfielScreen> {
                       .collection('meldingen')
                       .where('userId', isEqualTo: currentUser.uid)
                       .get();
-                  
+
                   for (var doc in reportsSnapshot.docs) {
+                    await doc.reference.delete();
+                  }
+
+                  // Verwijder alle notificaties van de gebruiker
+                  final notificationsSnapshot = await _firestore
+                      .collection('notifications')
+                      .where('userId', isEqualTo: currentUser.uid)
+                      .get();
+
+                  for (var doc in notificationsSnapshot.docs) {
                     await doc.reference.delete();
                   }
 
@@ -328,11 +339,11 @@ class _ProfielScreenState extends State<ProfielScreen> {
 
                   // Sluit dialog
                   Navigator.pop(context);
-                  
+
                   // Navigeer naar StartScreen en verwijder alle vorige schermen
                   Navigator.of(context).pushAndRemoveUntil(
                     MaterialPageRoute(builder: (context) => const StartScreen()),
-                    (route) => false,
+                        (route) => false,
                   );
                 } catch (e) {
                   print('Error deleting account: $e');
@@ -363,6 +374,86 @@ class _ProfielScreenState extends State<ProfielScreen> {
                 ),
               ),
             ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildInboxIconWithBadge() {
+    final currentUser = _auth.currentUser;
+
+    if (currentUser == null) {
+      return IconButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const InboxScreen(),
+            ),
+          );
+        },
+        icon: const Icon(
+          Icons.inbox,
+          color: Colors.black,
+          size: 32,
+        ),
+      );
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore
+          .collection('notifications')
+          .where('userId', isEqualTo: currentUser.uid)
+          .where('isRead', isEqualTo: false)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final unreadCount = snapshot.data?.docs.length ?? 0;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const InboxScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(
+                Icons.inbox,
+                color: Colors.black,
+                size: 32,
+              ),
+            ),
+            if (unreadCount > 0)
+              Positioned(
+                right: 6,
+                top: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFf5a623),
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Center(
+                    child: Text(
+                      unreadCount > 9 ? '9+' : '$unreadCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         );
       },
@@ -555,7 +646,8 @@ class _ProfielScreenState extends State<ProfielScreen> {
                             // Home icoon
                             IconButton(
                               onPressed: () {
-                                Navigator.pop(context);
+                                // Pop alle schermen tot we bij home zijn
+                                Navigator.popUntil(context, (route) => route.isFirst);
                               },
                               icon: const Icon(
                                 Icons.home,
@@ -574,17 +666,8 @@ class _ProfielScreenState extends State<ProfielScreen> {
                                 size: 32,
                               ),
                             ),
-                            // Inbox/berichten icoon
-                            IconButton(
-                              onPressed: () {
-                                // TODO: Navigeer naar berichten
-                              },
-                              icon: const Icon(
-                                Icons.inbox,
-                                color: Colors.black,
-                                size: 32,
-                              ),
-                            ),
+                            // Inbox/berichten icoon met badge
+                            _buildInboxIconWithBadge(),
                             // Profiel icoon (actief)
                             IconButton(
                               onPressed: () {

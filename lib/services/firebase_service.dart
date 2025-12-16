@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -11,12 +12,25 @@ class FirebaseService {
       final doc = await _firestore
           .collection('usernames')
           .doc(username.toLowerCase())
-          .get();
+          .get()
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              throw TimeoutException('Username check timed out');
+            },
+          );
 
+      // Als document bestaat, is username NIET beschikbaar
+      // Als document niet bestaat, is username WEL beschikbaar
       return !doc.exists;
+    } on TimeoutException catch (e) {
+      print('Timeout checking username: $e');
+      // Bij timeout, gooi de error door zodat de caller kan beslissen wat te doen
+      rethrow;
     } catch (e) {
       print('Error checking username: $e');
-      return false;
+      // Gooi andere errors ook door
+      rethrow;
     }
   }
 
@@ -28,7 +42,16 @@ class FirebaseService {
   }) async {
     try {
       // Check eerst of username beschikbaar is
-      final isAvailable = await isUsernameAvailable(username);
+      bool isAvailable;
+      try {
+        isAvailable = await isUsernameAvailable(username);
+      } catch (e) {
+        print('Could not verify username availability: $e');
+        // Als we de beschikbaarheid niet kunnen checken, gaan we door
+        // De username wordt later geclaimd, en als die al bestaat krijgen we een error
+        isAvailable = true;
+      }
+
       if (!isAvailable) {
         return {
           'success': false,
@@ -36,7 +59,7 @@ class FirebaseService {
         };
       }
 
-      // ⭐ NIEUWE CODE: Check of user al ingelogd is
+      // ⭐ Check of user al ingelogd is
       final currentUser = _auth.currentUser;
       String uid;
 
