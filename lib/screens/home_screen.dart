@@ -190,6 +190,18 @@ class _HomeScreenState extends State<HomeScreen> {
     mapMarkerImageData = bytes.buffer.asUint8List();
     pointAnnotationManager = await controller.annotations.createPointAnnotationManager();
 
+    pointAnnotationManager!.addOnPointAnnotationClickListener(
+          (mb.PointAnnotation annotation) {
+        final userInfo = annotation.userInfo;
+        if (userInfo == null) return false;
+
+        final meldingId = userInfo['meldingId'];
+        _onMeldingTapped(meldingId);
+
+        return true;
+      },
+    );
+
     setState(() {
       mapboxMapController = controller;
     });
