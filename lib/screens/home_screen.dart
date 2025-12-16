@@ -11,6 +11,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/melding_service.dart';
 import '../models/melding_model.dart';
+import '../listeners/melding_click_listener.dart';
+import '../widgets/meldingen/melding_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,7 +28,10 @@ class _HomeScreenState extends State<HomeScreen> {
   StreamSubscription<List<Melding>>? meldingenStream;
   mb.PointAnnotationManager? pointAnnotationManager;
   Uint8List? mapMarkerImageData;
-  List<Melding> renderedMeldingen = <Melding>[];
+  //List<Melding> renderedMeldingen = <Melding>[];
+  final Map<String, Melding> _annotationsMap = {};
+  Melding? _selectedMelding;
+  bool _showMeldingCard = false;
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -91,12 +96,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 Center(
                   child: mb.MapWidget(
                     onMapCreated: _onMapCreated,
-                    //onTapListener: _onMapTap,
                   ),
                 ),
                 // Floating action button voor melding maken
                 Positioned(
-                  bottom: 100,
+                  bottom: 150,
                   right: 24,
                   child: SizedBox(
                     width: 70,
@@ -118,6 +122,24 @@ class _HomeScreenState extends State<HomeScreen> {
                         size: 40,
                       ),
                     ),
+                  ),
+                ),
+                //show melding card
+                if (_showMeldingCard && _selectedMelding != null)
+                Positioned(
+                  bottom: 0,
+                  left: 16,
+                  right: 16,
+                  child: MeldingCard(
+                    melding: _selectedMelding!,
+                    //onTap: () {
+                      // optional: open detailed page
+                      //setState(() {
+                        //_showMeldingCard = false;
+                        //_selectedMelding = null;
+                      //});
+                    //},
+                    //showDeleteButton: true,
                   ),
                 ),
               ],
@@ -268,21 +290,16 @@ class _HomeScreenState extends State<HomeScreen> {
     mapMarkerImageData = bytes.buffer.asUint8List();
     pointAnnotationManager = await controller.annotations.createPointAnnotationManager();
 
-    /*pointAnnotationManager!.addOnPointAnnotationClickListener(
-          (mb.PointAnnotation annotation) {
-        final userInfo = annotation.userInfo;
-        if (userInfo == null) return false;
-
-        final meldingId = userInfo['meldingId'];
-        _onMeldingTapped(meldingId);
-
-        return true;
-      },
-    );*/
+    //addOnPointAnnotationClickListener is deprecated but the alternative
+    //tapEvents does not work
+    pointAnnotationManager!.addOnPointAnnotationClickListener(
+      MeldingPointClickListener(_annotationsMap, _onMeldingTapped),
+    );
 
     setState(() {
       mapboxMapController = controller;
     });
+
     mapboxMapController?.location.updateSettings(
       mb.LocationComponentSettings(
         enabled: true,
@@ -297,42 +314,20 @@ class _HomeScreenState extends State<HomeScreen> {
     _showMeldingenOnMap();
   }
 
-  /*Future<void> _onMapTap(mb.ScreenCoordinate screenCoordinate) async {
-    final queryGeometry =
-    mb.RenderedQueryGeometry.fromScreenCoordinate(screenCoordinate);
-
-    final results = await mapboxMapController?.queryRenderedFeatures(
-      queryGeometry,
-      mb.RenderedQueryOptions(
-        layerIds: null,
-        filter: null,
-      ),
-    );
-
-    if (results == null || results.isEmpty) return;
-
-    for (final queried in results) {
-      final sourceFeature = queried?.sourceFeature;
-      if (sourceFeature == null) continue;
-
-      final properties = sourceFeature.properties;
-      if (properties == null) continue;
-
-      // userInfo from PointAnnotation ends up here
-      if (properties.containsKey('meldingId')) {
-        final meldingId = properties['meldingId'];
-        _onMeldingTapped(meldingId);
-        break;
-      }
-    }
-  }*/
+  void _onMeldingTapped(Melding melding) {
+    print("Tapped melding id: ${melding.id}");
+    setState(() {
+      _selectedMelding = melding;
+      _showMeldingCard = true;
+    });
+  }
 
   void _showMeldingenOnMap() async {
     meldingenStream?.cancel();
     //await Future.delayed(const Duration(seconds: 1));
     //List<Melding> meldingenList = <Melding>[];
     //pointAnnotationManager?.deleteAll();
-    meldingenStream = _meldingService.getAllMeldingen().listen((List<Melding> meldingen) {
+    meldingenStream = _meldingService.getAllMeldingen().listen((List<Melding> meldingen) async {
       if (!mounted) return;
 
       pointAnnotationManager?.deleteAll();
@@ -340,6 +335,7 @@ class _HomeScreenState extends State<HomeScreen> {
       //TODO: Store all melding data locally? It's ID at least? This way it does not need to be requested everytime
       for (final melding in meldingen) {
         final pointAnnotationOptions = mb.PointAnnotationOptions(
+
           geometry: mb.Point(
             coordinates: mb.Position(
               melding.longitude,
@@ -349,7 +345,10 @@ class _HomeScreenState extends State<HomeScreen> {
           image: mapMarkerImageData,
           //iconSize: 3.0,
         );
-        Future<mb.PointAnnotation>? pointAnnotation = pointAnnotationManager?.create(pointAnnotationOptions);
+        mb.PointAnnotation? pointAnnotation = await pointAnnotationManager?.create(pointAnnotationOptions);
+        if (pointAnnotation != null) {
+          _annotationsMap[pointAnnotation.id] = melding;
+        }
       }
     }, onError: (e, stack) {
       //Pop up notification?

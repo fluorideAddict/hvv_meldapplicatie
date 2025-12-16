@@ -41,7 +41,7 @@ class HartVoorVerkeerApp extends StatelessWidget {
         primaryColor: const Color(0xFF481d39),
         scaffoldBackgroundColor: const Color(0xFFEAE2D5),
       ),
-      home: const StartScreen(),
+      home: determineNextPage(),
       debugShowCheckedModeBanner: false,
     );
   }
