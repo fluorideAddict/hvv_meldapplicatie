@@ -26,6 +26,16 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/logo/meldveilig_logo.png"
+  adaptive_icon_foreground: "assets/logo/meldveilig_logo.png"
+  adaptive_icon_background: "#eae2d5"
+  remove_alpha_ios: true
+
 
 flutter:
   uses-material-design: true
@@ -38,6 +48,7 @@ flutter:
     - assets/images/icoon2.png
     - assets/images/icoon3.png
     - assets/images/logoHVV2.png
+    - assets/logo/meldveilig_logo.png
     - assets/images/map-marker.png
     - assets/images/map-marker2.png
 
