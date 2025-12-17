@@ -53,6 +53,74 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFeae2d5),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButton: SizedBox(
+        width: 100,
+        height: 100,
+        child: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const MeldingMakenScreen(),
+              ),
+            );
+          },
+          backgroundColor: const Color(0xFFeae2d5),
+          elevation: 0,
+          shape: const CircleBorder(
+              side: BorderSide(
+                color: Color(0xFFbd213f),
+                width: 5.0,
+              )
+          ),
+          child: const Icon(
+            Icons.add,
+            color: Color(0xFF481d39),
+            size: 50,
+          ),
+        ),
+      ),
+
+      bottomNavigationBar: BottomAppBar(
+        color: const Color(0xFFbd213f),
+        shape: const CircularNotchedRectangle(),
+        notchMargin: -10,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.home, color: Colors.black, size: 32),
+                  onPressed: () {},
+                ),
+                IconButton(
+                  icon: const Icon(Icons.public, color: Colors.black, size: 32),
+                  // TODO: Navigeer naar wereld/ontdek pagina
+                  onPressed: () {},
+                ),
+                const SizedBox(width: 48), // space for FAB
+                _buildInboxIconWithBadge(),
+                IconButton(
+                  icon: const Icon(Icons.person, color: Colors.black, size: 32),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const ProfielScreen(),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+
       body: Column(
         children: [
           // Rode header met logo en vraagteken
@@ -98,9 +166,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     onMapCreated: _onMapCreated,
                   ),
                 ),
+
                 // Floating action button voor melding maken
                 Positioned(
-                  bottom: 150,
+                  bottom: 100,
                   right: 24,
                   child: SizedBox(
                     width: 70,
@@ -127,7 +196,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 //show melding card
                 if (_showMeldingCard && _selectedMelding != null)
                 Positioned(
-                  bottom: 0,
+                  bottom: 175,
                   left: 16,
                   right: 16,
                   child: MeldingCard(
@@ -146,7 +215,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           // Rode footer met 4 iconen
-          Container(
+          /*Container(
             color: const Color(0xFFbd213f),
             child: SafeArea(
               top: false,
@@ -177,6 +246,38 @@ class _HomeScreenState extends State<HomeScreen> {
                         size: 32,
                       ),
                     ),
+                    /*Stack(
+                      children: [
+                        //Positioned(
+                        //  bottom: 100,
+                        //  left: 0,
+                        SizedBox(
+                          width: 70,
+                          height: 70,
+                          //padding: const EdgeInsets.only(bottom: 12),
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const MeldingMakenScreen(),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              shape: const CircleBorder(),
+                              padding: EdgeInsets.all(0.0),
+                              backgroundColor: const Color(0xFFeae2d5),
+                            ),
+                            child: const Icon(
+                              Icons.add,
+                              color: Color(0xFF481d39),
+                              size: 40,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),*/
                     // Inbox/berichten icoon met badge
                     _buildInboxIconWithBadge(),
                     // Profiel icoon
@@ -199,7 +300,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-          ),
+          ),*/
+
         ],
       ),
     );
@@ -303,6 +405,8 @@ class _HomeScreenState extends State<HomeScreen> {
     mapboxMapController?.location.updateSettings(
       mb.LocationComponentSettings(
         enabled: true,
+        //pulsing causing big performance hit?
+        //pulsingEnabled: true,
       ),
     );
     mapboxMapController?.scaleBar.updateSettings(

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import '../../services/melding_service.dart';
 import '../../widgets/meldingen/category_selector.dart';
@@ -68,10 +69,14 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
         desiredAccuracy: LocationAccuracy.high,
       );
 
+      List<Placemark> placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+      Placemark placemark = placemarks[0];
+
       setState(() {
         _latitude = position.latitude;
         _longitude = position.longitude;
-        _address = 'Locatie: ${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
+        _address = '${placemark.street}, ${placemark.postalCode} ${placemark.subAdministrativeArea}';
+        //_address = 'Locatie: ${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
         _addressController.text = _address;
         _isLoadingLocation = false;
       });
@@ -394,6 +399,11 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
                 child: mb.MapWidget(
                   onMapCreated: (controller) {
                     _mapController = controller;
+                    controller.scaleBar.updateSettings(
+                      mb.ScaleBarSettings(
+                        enabled: false,
+                      ),
+                    );
                     if (_latitude != null && _longitude != null) {
                       controller.setCamera(
                         mb.CameraOptions(

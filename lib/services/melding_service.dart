@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/melding_model.dart';
 import 'storage_service.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 class MeldingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
