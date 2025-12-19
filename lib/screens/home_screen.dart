@@ -201,14 +201,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   right: 16,
                   child: MeldingCard(
                     melding: _selectedMelding!,
-                    //onTap: () {
-                      // optional: open detailed page
-                      //setState(() {
-                        //_showMeldingCard = false;
-                        //_selectedMelding = null;
-                      //});
-                    //},
-                    //showDeleteButton: true,
+                    onTap: () {
+                      //optional: open detailed page
+                      setState(() {
+                        _showMeldingCard = false;
+                        _selectedMelding = null;
+                      });
+                    },
+                    showDeleteButton: true,
                   ),
                 ),
               ],

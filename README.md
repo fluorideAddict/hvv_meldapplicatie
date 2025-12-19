@@ -1,16 +1,15 @@
-# hvv_meldapplicatie
+# meld-veilig-mobile
 
-A new Flutter project.
+Laagdrempelig mobiele applicatie voor het melden van onveilige verkeerssituaties.
 
-## Getting Started
+Framework: Flutter
+Database: Firebase
+Kaartfunctionaliteit: MapBox
 
-This project is a starting point for a Flutter application.
+## Source code werkend krijgen (in Android Studio)
+1. Indien Android Studio nog niet geinstalleerd is, installeer het.
+2. Clone deze repository (REPO_NAME_HERE).
+3. Open de root directory in Android Studio
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## API keys toevoegen
+Zowel Firebase als MapBox hebben geldige API keys nodig om te functioneren. Deze horen handmatig toegevoegd te worden na het clonen van de repository indien je via o.a. Android Studio gebruik wilt maken van de source code.
