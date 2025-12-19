@@ -75,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
               )
           ),
           child: const Icon(
-            Icons.add,
+            Icons.priority_high,
             color: Color(0xFF481d39),
             size: 50,
           ),
@@ -167,7 +167,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                // Floating action button voor melding maken
+                // Floating action button voor melding maken - ALLEEN VISUEEL
                 Positioned(
                   bottom: 100,
                   right: 24,
@@ -176,12 +176,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     height: 70,
                     child: FloatingActionButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const MeldingMakenScreen(),
-                          ),
-                        );
+                        // Geen navigatie meer - button doet niks
                       },
                       backgroundColor: const Color(0xFFf5a623),
                       shape: const CircleBorder(),
@@ -195,22 +190,22 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 //show melding card
                 if (_showMeldingCard && _selectedMelding != null)
-                Positioned(
-                  bottom: 175,
-                  left: 16,
-                  right: 16,
-                  child: MeldingCard(
-                    melding: _selectedMelding!,
-                    //onTap: () {
+                  Positioned(
+                    bottom: 175,
+                    left: 16,
+                    right: 16,
+                    child: MeldingCard(
+                      melding: _selectedMelding!,
+                      //onTap: () {
                       // optional: open detailed page
                       //setState(() {
-                        //_showMeldingCard = false;
-                        //_selectedMelding = null;
+                      //_showMeldingCard = false;
+                      //_selectedMelding = null;
                       //});
-                    //},
-                    //showDeleteButton: true,
+                      //},
+                      //showDeleteButton: true,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
