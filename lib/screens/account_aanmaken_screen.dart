@@ -12,7 +12,7 @@ class AccountAanmakenScreen extends StatefulWidget {
 }
 
 class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with SingleTickerProviderStateMixin {
-  int selectedAvatar = 1;
+  int selectedAvatar = 2;
   final TextEditingController usernameController = TextEditingController();
   String? selectedAge;
   final FirebaseService _firebaseService = FirebaseService();
@@ -63,7 +63,7 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
   @override
   void initState() {
     super.initState();
-    
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1800),
       vsync: this,
@@ -183,7 +183,7 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
 
   void generateRandomUsername() async {
     if (_isLoading) return;
-    
+
     setState(() {
       _isLoading = true;
     });
@@ -192,26 +192,26 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
       final random = Random();
       int attempts = 0;
       const maxAttempts = 10;
-      
+
       while (attempts < maxAttempts) {
         final adjective = adjectives[random.nextInt(adjectives.length)];
         final noun = nouns[random.nextInt(nouns.length)];
         final number = random.nextInt(9999) + 1;
-        
+
         final username = '$adjective$noun$number';
-        
+
         try {
           // Voeg timeout toe!
           final isAvailable = await _firebaseService
               .isUsernameAvailable(username)
               .timeout(
-                const Duration(seconds: 5),
-                onTimeout: () {
-                  print('Timeout checking username $username');
-                  return false;
-                },
-              );
-          
+            const Duration(seconds: 5),
+            onTimeout: () {
+              print('Timeout checking username $username');
+              return false;
+            },
+          );
+
           if (isAvailable) {
             setState(() {
               usernameController.text = username;
@@ -222,14 +222,14 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
         } catch (e) {
           print('Error checking username $username: $e');
         }
-        
+
         attempts++;
       }
-      
+
       setState(() {
         _isLoading = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -244,7 +244,7 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
       setState(() {
         _isLoading = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -386,16 +386,16 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
                           child: PageView.builder(
                             controller: PageController(
                               viewportFraction: 0.4,
-                              initialPage: selectedAvatar,
+                              initialPage: 1,
                             ),
                             onPageChanged: (index) {
                               setState(() {
-                                selectedAvatar = index;
+                                selectedAvatar = index + 1;
                               });
                             },
                             itemCount: 3,
                             itemBuilder: (context, index) {
-                              final isSelected = selectedAvatar == index;
+                              final isSelected = selectedAvatar == (index + 1);
                               return AnimatedContainer(
                                 duration: const Duration(milliseconds: 300),
                                 curve: Curves.easeInOut,
@@ -417,13 +417,13 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(
                             3,
-                            (index) => Container(
+                                (index) => Container(
                               width: 8,
                               height: 8,
                               margin: const EdgeInsets.symmetric(horizontal: 4),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: selectedAvatar == index
+                                color: selectedAvatar == (index + 1)
                                     ? const Color(0xFF481d39)
                                     : const Color(0xFF945a7f).withOpacity(0.3),
                               ),
@@ -480,31 +480,31 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
                                 padding: const EdgeInsets.only(right: 8),
                                 child: _isLoading
                                     ? const SizedBox(
-                                        width: 24,
-                                        height: 24,
-                                        child: Padding(
-                                          padding: EdgeInsets.all(12.0),
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 2,
-                                            valueColor: AlwaysStoppedAnimation<Color>(
-                                              Color(0xFF481d39),
-                                            ),
-                                          ),
-                                        ),
-                                      )
-                                    : IconButton(
-                                        onPressed: () {
-                                          FocusScope.of(context).unfocus();
-                                          generateRandomUsername();
-                                        },
-                                        icon: const Icon(
-                                          Icons.casino,
-                                          color: Color(0xFF481d39),
-                                          size: 24,
-                                        ),
-                                        tooltip: 'Genereer random gebruikersnaam',
-                                        splashRadius: 20,
+                                  width: 24,
+                                  height: 24,
+                                  child: Padding(
+                                    padding: EdgeInsets.all(12.0),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xFF481d39),
                                       ),
+                                    ),
+                                  ),
+                                )
+                                    : IconButton(
+                                  onPressed: () {
+                                    FocusScope.of(context).unfocus();
+                                    generateRandomUsername();
+                                  },
+                                  icon: const Icon(
+                                    Icons.casino,
+                                    color: Color(0xFF481d39),
+                                    size: 24,
+                                  ),
+                                  tooltip: 'Genereer random gebruikersnaam',
+                                  splashRadius: 20,
+                                ),
                               ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(28),
@@ -626,10 +626,10 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
                               onChanged: _isLoading
                                   ? null
                                   : (value) {
-                                      setState(() {
-                                        selectedAge = value;
-                                      });
-                                    },
+                                setState(() {
+                                  selectedAge = value;
+                                });
+                              },
                             ),
                           ),
                         ),
@@ -658,22 +658,22 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
                         ),
                         child: _isLoading
                             ? const SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white,
-                                  ),
-                                ),
-                              )
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
                             : const Text(
-                                'Verder',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
+                          'Verder',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                       ),
                     ),
                   ),
