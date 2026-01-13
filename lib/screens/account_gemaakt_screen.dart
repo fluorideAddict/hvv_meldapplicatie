@@ -54,10 +54,22 @@ class AccountGemaaktScreen extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Image.asset(
-                      'assets/images/icoon${avatar + 1}.png',
+                    Container(
                       width: 40,
                       height: 40,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF481d39),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF481d39),
+                          width: 2,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.person,
+                        size: 24,
+                        color: Color(0xFFeae2d5),
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Text(
@@ -96,7 +108,7 @@ class AccountGemaaktScreen extends StatelessWidget {
                       MaterialPageRoute(
                         builder: (context) => const HomeScreen(),
                       ),
-                      (route) => false,
+                          (route) => false,
                     );
                   },
                   style: ElevatedButton.styleFrom(

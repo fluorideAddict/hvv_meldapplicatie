@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'dart:math';
 import 'loading_screen.dart';
 import '../services/firebase_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class AccountAanmakenScreen extends StatefulWidget {
   const AccountAanmakenScreen({Key? key}) : super(key: key);
@@ -12,7 +13,6 @@ class AccountAanmakenScreen extends StatefulWidget {
 }
 
 class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with SingleTickerProviderStateMixin {
-  int selectedAvatar = 2;
   final TextEditingController usernameController = TextEditingController();
   String? selectedAge;
   final FirebaseService _firebaseService = FirebaseService();
@@ -23,8 +23,8 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
   late Animation<Offset> _headerSlide;
   late Animation<double> _titleOpacity;
   late Animation<Offset> _titleSlide;
-  late Animation<double> _avatarOpacity;
-  late Animation<Offset> _avatarSlide;
+  late Animation<double> _iconOpacity;
+  late Animation<Offset> _iconSlide;
   late Animation<double> _usernameOpacity;
   late Animation<Offset> _usernameSlide;
   late Animation<double> _ageOpacity;
@@ -103,14 +103,14 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
       ),
     );
 
-    // Avatar (0.15 - 0.65)
-    _avatarOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+    // Icon (0.15 - 0.65)
+    _iconOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
         curve: const Interval(0.15, 0.65, curve: Curves.easeOutCubic),
       ),
     );
-    _avatarSlide = Tween<Offset>(
+    _iconSlide = Tween<Offset>(
       begin: const Offset(0, -0.5),
       end: Offset.zero,
     ).animate(
@@ -189,6 +189,14 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
     });
 
     try {
+      // ⭐ CHECK OF USER IS INGELOGD, ZO NIET -> LOGIN
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        print('🔐 User not logged in, signing in anonymously...');
+        await FirebaseAuth.instance.signInAnonymously();
+        print('✅ Signed in anonymously');
+      }
+
       final random = Random();
       int attempts = 0;
       const maxAttempts = 10;
@@ -201,16 +209,8 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
         final username = '$adjective$noun$number';
 
         try {
-          // Voeg timeout toe!
-          final isAvailable = await _firebaseService
-              .isUsernameAvailable(username)
-              .timeout(
-            const Duration(seconds: 5),
-            onTimeout: () {
-              print('Timeout checking username $username');
-              return false;
-            },
-          );
+          // ❌ TIMEOUT VERWIJDERD - Direct checken
+          final isAvailable = await _firebaseService.isUsernameAvailable(username);
 
           if (isAvailable) {
             setState(() {
@@ -288,7 +288,7 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
       MaterialPageRoute(
         builder: (context) => LoadingScreen(
           username: usernameController.text.trim(),
-          avatar: selectedAvatar,
+          avatar: 1, // Default avatar waarde (niet meer gebruikt maar nog nodig voor LoadingScreen)
           ageCategory: selectedAge!,
         ),
       ),
@@ -347,94 +347,44 @@ class _AccountAanmakenScreenState extends State<AccountAanmakenScreen> with Sing
                   opacity: _titleOpacity,
                   child: SlideTransition(
                     position: _titleSlide,
-                    child: Column(
-                      children: const [
-                        Text(
-                          'Account aanmaken',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 36,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFF481d39),
-                            fontFamily: 'Oswald',
-                          ),
-                        ),
-                        SizedBox(height: 5),
-                        Text(
-                          'Kies een avatar',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Color(0xFF945a7f),
-                            fontWeight: FontWeight.w600,
-                            fontFamily: 'Offside',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // Avatar carousel met animatie
-                FadeTransition(
-                  opacity: _avatarOpacity,
-                  child: SlideTransition(
-                    position: _avatarSlide,
-                    child: Column(
-                      children: [
-                        SizedBox(
-                          height: 150,
-                          child: PageView.builder(
-                            controller: PageController(
-                              viewportFraction: 0.4,
-                              initialPage: 1,
-                            ),
-                            onPageChanged: (index) {
-                              setState(() {
-                                selectedAvatar = index + 1;
-                              });
-                            },
-                            itemCount: 3,
-                            itemBuilder: (context, index) {
-                              final isSelected = selectedAvatar == (index + 1);
-                              return AnimatedContainer(
-                                duration: const Duration(milliseconds: 300),
-                                curve: Curves.easeInOut,
-                                margin: const EdgeInsets.symmetric(horizontal: 8),
-                                child: Center(
-                                  child: Image.asset(
-                                    'assets/images/icoon${index + 1}.png',
-                                    width: isSelected ? 130 : 90,
-                                    height: isSelected ? 130 : 90,
-                                    fit: BoxFit.contain,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: List.generate(
-                            3,
-                                (index) => Container(
-                              width: 8,
-                              height: 8,
-                              margin: const EdgeInsets.symmetric(horizontal: 4),
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: selectedAvatar == (index + 1)
-                                    ? const Color(0xFF481d39)
-                                    : const Color(0xFF945a7f).withOpacity(0.3),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                    child: const Text(
+                      'Account aanmaken',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF481d39),
+                        fontFamily: 'Oswald',
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 30),
+                // User icon met animatie
+                FadeTransition(
+                  opacity: _iconOpacity,
+                  child: SlideTransition(
+                    position: _iconSlide,
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF481d39),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF481d39),
+                          width: 3,
+                        ),
+                      ),
+                      child: const Icon(
+                        Icons.person,
+                        size: 70,
+                        color: Color(0xFFeae2d5),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 40),
                 // Username field met animatie
                 FadeTransition(
                   opacity: _usernameOpacity,

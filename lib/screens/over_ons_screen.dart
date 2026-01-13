@@ -1,12 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class OverOnsScreen extends StatelessWidget {
   const OverOnsScreen({Key? key}) : super(key: key);
 
+  Future<void> _launchUrl(String url) async {
+    final Uri uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      print('Could not launch $url');
+    }
+  }
+
+  Future<void> _launchPhone(String phone) async {
+    final Uri uri = Uri.parse('tel:$phone');
+    if (!await launchUrl(uri)) {
+      print('Could not launch $phone');
+    }
+  }
+
+  Future<void> _launchEmail(String email) async {
+    final Uri uri = Uri.parse('mailto:$email');
+    if (!await launchUrl(uri)) {
+      print('Could not launch $email');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFeae2d5),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -142,6 +165,87 @@ class OverOnsScreen extends StatelessWidget {
                           height: 1.5,
                         ),
                       ),
+                      const SizedBox(height: 32),
+                      // Contact sectie
+                      const Text(
+                        'Contact',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF481d39),
+                          fontFamily: 'Oswald',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      // Website
+                      InkWell(
+                        onTap: () => _launchUrl('https://hartvoorverkeer.nl'),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.language,
+                              color: Color(0xFF481d39),
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'hartvoorverkeer.nl',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFF481d39),
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Telefoon
+                      InkWell(
+                        onTap: () => _launchPhone('0640206898'),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.phone,
+                              color: Color(0xFF481d39),
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              '06 40 20 68 98',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFF481d39),
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Email
+                      InkWell(
+                        onTap: () => _launchEmail('info@hartvoorverkeer.nl'),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.email,
+                              color: Color(0xFF481d39),
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'info@hartvoorverkeer.nl',
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: Color(0xFF481d39),
+                                decoration: TextDecoration.underline,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),

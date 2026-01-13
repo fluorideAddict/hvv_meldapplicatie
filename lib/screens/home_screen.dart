@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'profiel_screen.dart';
 import 'inbox_screen.dart';
+import 'pinned_locations_screen.dart';
 import 'dart:async';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import 'package:geolocator/geolocator.dart' as gl;
@@ -10,6 +12,7 @@ import 'meldingen/melding_maken_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../services/melding_service.dart';
+import '../services/pin_service.dart';
 import '../models/melding_model.dart';
 import '../listeners/melding_click_listener.dart';
 import '../widgets/meldingen/melding_card.dart';
@@ -23,15 +26,16 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final MeldingService _meldingService = MeldingService();
+  final PinService _pinService = PinService();
   mb.MapboxMap? mapboxMapController;
   StreamSubscription? userPositionStream;
   StreamSubscription<List<Melding>>? meldingenStream;
   mb.PointAnnotationManager? pointAnnotationManager;
   Uint8List? mapMarkerImageData;
-  //List<Melding> renderedMeldingen = <Melding>[];
   final Map<String, Melding> _annotationsMap = {};
   Melding? _selectedMelding;
   bool _showMeldingCard = false;
+  gl.Position? _currentPosition;
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -39,6 +43,16 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+
+    // ⭐ ZET MAPBOX TOKEN UIT .ENV
+    final token = dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
+    if (token.isNotEmpty) {
+      mb.MapboxOptions.setAccessToken(token);
+      print('✅ Mapbox token set: ${token.substring(0, 20)}...');
+    } else {
+      print('❌ No Mapbox token found in .env');
+    }
+
     _determinePosition();
   }
 
@@ -47,6 +61,200 @@ class _HomeScreenState extends State<HomeScreen> {
     meldingenStream?.cancel();
     userPositionStream?.cancel();
     super.dispose();
+  }
+
+  Future<void> _pinCurrentLocation() async {
+    if (_currentPosition == null) {
+      _showTopNotification(
+        context,
+        'Locatie nog niet beschikbaar, probeer het opnieuw',
+        isError: true,
+      );
+      return;
+    }
+
+    final success = await _pinService.pinLocation(
+      latitude: _currentPosition!.latitude,
+      longitude: _currentPosition!.longitude,
+    );
+
+    if (success) {
+      _showTopNotification(
+        context,
+        'Locatie gepind!',
+        isError: false,
+      );
+    } else {
+      final count = await _pinService.getPinCount();
+      if (count >= 10) {
+        _showTopNotification(
+          context,
+          'Maximum aantal pins bereikt (10). Verwijder eerst oude pins.',
+          isError: true,
+        );
+      } else {
+        _showTopNotification(
+          context,
+          'Kon locatie niet pinnen, probeer het opnieuw',
+          isError: true,
+        );
+      }
+    }
+  }
+
+  // Notificatie van boven met fade-out animatie
+  void _showTopNotification(BuildContext context, String message, {required bool isError}) {
+    final overlay = Overlay.of(context);
+    OverlayEntry? overlayEntry;
+    OverlayEntry? fadeOutEntry;
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 80,
+        left: 16,
+        right: 16,
+        child: Material(
+          color: Colors.transparent,
+          child: TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 300),
+            tween: Tween(begin: 0.0, end: 1.0),
+            builder: (context, value, child) {
+              return Transform.translate(
+                offset: Offset(0, -20 * (1 - value)),
+                child: Opacity(
+                  opacity: value,
+                  child: child,
+                ),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+                border: Border.all(
+                  color: isError
+                      ? const Color(0xFFbd213f)
+                      : const Color(0xFFf5a623),
+                  width: 2,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    isError ? Icons.error_outline : Icons.check_circle_outline,
+                    color: isError
+                        ? const Color(0xFFbd213f)
+                        : const Color(0xFFf5a623),
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      message,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF481d39),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(overlayEntry);
+
+    // Fade out animatie na 2.5 seconden
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (overlayEntry != null) {
+        overlayEntry.remove();
+      }
+
+      fadeOutEntry = OverlayEntry(
+        builder: (context) => Positioned(
+          top: MediaQuery.of(context).padding.top + 80,
+          left: 16,
+          right: 16,
+          child: Material(
+            color: Colors.transparent,
+            child: TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: 500),
+              tween: Tween(begin: 1.0, end: 0.0),
+              builder: (context, value, child) {
+                return Transform.translate(
+                  offset: Offset(0, -20 * (1 - value)),
+                  child: Opacity(
+                    opacity: value,
+                    child: child,
+                  ),
+                );
+              },
+              onEnd: () {
+                if (fadeOutEntry != null) {
+                  fadeOutEntry!.remove();
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.2),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: isError
+                        ? const Color(0xFFbd213f)
+                        : const Color(0xFFf5a623),
+                    width: 2,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      isError ? Icons.error_outline : Icons.check_circle_outline,
+                      color: isError
+                          ? const Color(0xFFbd213f)
+                          : const Color(0xFFf5a623),
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        message,
+                        style: const TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF481d39),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      overlay.insert(fadeOutEntry!);
+    });
   }
 
   @override
@@ -97,11 +305,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: const Icon(Icons.home, color: Colors.black, size: 32),
                   onPressed: () {},
                 ),
-                IconButton(
-                  icon: const Icon(Icons.public, color: Colors.black, size: 32),
-                  // TODO: Navigeer naar wereld/ontdek pagina
-                  onPressed: () {},
-                ),
+                _buildPinIconWithBadge(),
                 const SizedBox(width: 48), // space for FAB
                 _buildInboxIconWithBadge(),
                 IconButton(
@@ -167,7 +371,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
 
-                // Floating action button voor melding maken - ALLEEN VISUEEL
+                // Floating action button voor pin maken
                 Positioned(
                   bottom: 100,
                   right: 24,
@@ -175,9 +379,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: 70,
                     height: 70,
                     child: FloatingActionButton(
-                      onPressed: () {
-                        // Geen navigatie meer - button doet niks
-                      },
+                      onPressed: _pinCurrentLocation,
                       backgroundColor: const Color(0xFFf5a623),
                       shape: const CircleBorder(),
                       child: const Icon(
@@ -196,109 +398,92 @@ class _HomeScreenState extends State<HomeScreen> {
                     right: 16,
                     child: MeldingCard(
                       melding: _selectedMelding!,
-                      //onTap: () {
-                      // optional: open detailed page
-                      //setState(() {
-                      //_showMeldingCard = false;
-                      //_selectedMelding = null;
-                      //});
-                      //},
-                      //showDeleteButton: true,
                     ),
                   ),
               ],
             ),
           ),
-          // Rode footer met 4 iconen
-          /*Container(
-            color: const Color(0xFFbd213f),
-            child: SafeArea(
-              top: false,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    // Home icoon
-                    IconButton(
-                      onPressed: () {
-                        // Al op home
-                      },
-                      icon: const Icon(
-                        Icons.home,
-                        color: Colors.black,
-                        size: 32,
-                      ),
-                    ),
-                    // Wereld/globe icoon
-                    IconButton(
-                      onPressed: () {
-                        // TODO: Navigeer naar wereld/ontdek pagina
-                      },
-                      icon: const Icon(
-                        Icons.public,
-                        color: Colors.black,
-                        size: 32,
-                      ),
-                    ),
-                    /*Stack(
-                      children: [
-                        //Positioned(
-                        //  bottom: 100,
-                        //  left: 0,
-                        SizedBox(
-                          width: 70,
-                          height: 70,
-                          //padding: const EdgeInsets.only(bottom: 12),
-                          child: ElevatedButton(
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const MeldingMakenScreen(),
-                                ),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              shape: const CircleBorder(),
-                              padding: EdgeInsets.all(0.0),
-                              backgroundColor: const Color(0xFFeae2d5),
-                            ),
-                            child: const Icon(
-                              Icons.add,
-                              color: Color(0xFF481d39),
-                              size: 40,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),*/
-                    // Inbox/berichten icoon met badge
-                    _buildInboxIconWithBadge(),
-                    // Profiel icoon
-                    IconButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ProfielScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(
-                        Icons.person,
-                        color: Colors.black,
-                        size: 32,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),*/
-
         ],
       ),
+    );
+  }
+
+  Widget _buildPinIconWithBadge() {
+    final currentUser = _auth.currentUser;
+
+    if (currentUser == null) {
+      return IconButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PinnedLocationsScreen(),
+            ),
+          );
+        },
+        icon: const Icon(
+          Icons.push_pin,
+          color: Colors.black,
+          size: 32,
+        ),
+      );
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore
+          .collection('pinned_locations')
+          .where('userId', isEqualTo: currentUser.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final pinCount = snapshot.data?.docs.length ?? 0;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PinnedLocationsScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(
+                Icons.push_pin,
+                color: Colors.black,
+                size: 32,
+              ),
+            ),
+            if (pinCount > 0)
+              Positioned(
+                right: 6,
+                top: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFf5a623),
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Center(
+                    child: Text(
+                      pinCount > 9 ? '9+' : '$pinCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -387,8 +572,6 @@ class _HomeScreenState extends State<HomeScreen> {
     mapMarkerImageData = bytes.buffer.asUint8List();
     pointAnnotationManager = await controller.annotations.createPointAnnotationManager();
 
-    //addOnPointAnnotationClickListener is deprecated but the alternative
-    //tapEvents does not work
     pointAnnotationManager!.addOnPointAnnotationClickListener(
       MeldingPointClickListener(_annotationsMap, _onMeldingTapped),
     );
@@ -400,8 +583,6 @@ class _HomeScreenState extends State<HomeScreen> {
     mapboxMapController?.location.updateSettings(
       mb.LocationComponentSettings(
         enabled: true,
-        //pulsing causing big performance hit?
-        //pulsingEnabled: true,
       ),
     );
     mapboxMapController?.scaleBar.updateSettings(
@@ -423,18 +604,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _showMeldingenOnMap() async {
     meldingenStream?.cancel();
-    //await Future.delayed(const Duration(seconds: 1));
-    //List<Melding> meldingenList = <Melding>[];
-    //pointAnnotationManager?.deleteAll();
     meldingenStream = _meldingService.getAllMeldingen().listen((List<Melding> meldingen) async {
       if (!mounted) return;
 
       pointAnnotationManager?.deleteAll();
 
-      //TODO: Store all melding data locally? It's ID at least? This way it does not need to be requested everytime
       for (final melding in meldingen) {
         final pointAnnotationOptions = mb.PointAnnotationOptions(
-
           geometry: mb.Point(
             coordinates: mb.Position(
               melding.longitude,
@@ -442,7 +618,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           image: mapMarkerImageData,
-          //iconSize: 3.0,
         );
         mb.PointAnnotation? pointAnnotation = await pointAnnotationManager?.create(pointAnnotationOptions);
         if (pointAnnotation != null) {
@@ -450,26 +625,17 @@ class _HomeScreenState extends State<HomeScreen> {
         }
       }
     }, onError: (e, stack) {
-      //Pop up notification?
       print("Meldingen stream error: $e");
       print(stack.toString());
     });
   }
 
-  /// Determine the current position of the device.
-  ///
-  /// When the location services are not enabled or permissions
-  /// are denied the `Future` will return an error.
   Future<void> _determinePosition() async {
     bool serviceEnabled;
     gl.LocationPermission permission;
 
-    // Test if location services are enabled.
     serviceEnabled = await gl.Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      // Location services are not enabled don't continue
-      // accessing the position and request users of the
-      // App to enable the location services.
       return Future.error('Location services are disabled.');
     }
 
@@ -477,16 +643,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (permission == gl.LocationPermission.denied) {
       permission = await gl.Geolocator.requestPermission();
       if (permission == gl.LocationPermission.denied) {
-        // Permissions are denied, next time you could try
-        // requesting permissions again (this is also where
-        // Android's shouldShowRequestPermissionRationale
-        // returned true. According to Android guidelines
-        // your App should show an explanatory UI now.
         return Future.error('Location permissions are denied');
       }
     }
     if (permission == gl.LocationPermission.deniedForever) {
-      // Permissions are denied forever, handle appropriately.
       return Future.error(
           'Location permissions are permanently denied, we cannot request permissions.');
     }
@@ -494,29 +654,31 @@ class _HomeScreenState extends State<HomeScreen> {
       accuracy: gl.LocationAccuracy.high,
       distanceFilter: 100,
     );
-    // When we reach here, permissions are granted and we can
-    // continue accessing the position of the device.
 
     userPositionStream?.cancel();
     userPositionStream = gl.Geolocator.getPositionStream(
         locationSettings: locationSettings).listen(
-          (
-          gl.Position? position,
-          ) {
-        if (position != null && mapboxMapController != null) {
-          mapboxMapController?.setCamera(
-              mb.CameraOptions(
-                  center: mb.Point(
-                      coordinates: mb.Position(
-                        position.longitude,
-                        position.latitude,
-                      )
-                  ),
-                  zoom: 15,
-                  bearing: 0,
-                  pitch: 0
-              )
-          );
+          (gl.Position? position) {
+        if (position != null) {
+          setState(() {
+            _currentPosition = position;
+          });
+
+          if (mapboxMapController != null) {
+            mapboxMapController?.setCamera(
+                mb.CameraOptions(
+                    center: mb.Point(
+                        coordinates: mb.Position(
+                          position.longitude,
+                          position.latitude,
+                        )
+                    ),
+                    zoom: 15,
+                    bearing: 0,
+                    pitch: 0
+                )
+            );
+          }
         }
       },
     );

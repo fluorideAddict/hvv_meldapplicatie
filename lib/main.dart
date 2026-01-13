@@ -1,48 +1,78 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'firebase_options.dart';
 import 'screens/start_screen.dart';
 import 'screens/home_screen.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
-import 'services/firebase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // ⭐ LAAD DE .ENV FILE
+  await dotenv.load(fileName: ".env");
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  await setup();
-  runApp(const HartVoorVerkeerApp());
+
+  runApp(const MyApp());
 }
 
-Future<void> setup() async {
-  await dotenv.load(fileName: ".env");
-  MapboxOptions.setAccessToken(dotenv.env["MAPBOX_ACCESS_TOKEN"]!);
-}
-
-class HartVoorVerkeerApp extends StatelessWidget {
-  const HartVoorVerkeerApp({Key? key}) : super(key: key);
-
-  determineNextPage() {
-    //error handling in case firebase service is not reachable? what happens if the user has no internet connection?
-    if(FirebaseService().isUserLoggedIn()){
-      return HomeScreen();
-    }
-    return StartScreen();
-  }
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Hart voor Verkeer',
       theme: ThemeData(
-        primaryColor: const Color(0xFF481d39),
-        scaffoldBackgroundColor: const Color(0xFFEAE2D5),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFbd213f)),
+        useMaterial3: true,
+        scaffoldBackgroundColor: const Color(0xFFeae2d5), // ⭐ DEFAULT BACKGROUND COLOR
       ),
-      home: determineNextPage(),
-      debugShowCheckedModeBanner: false,
+      home: FutureBuilder<Widget>(
+        future: determineNextPage(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(
+              backgroundColor: Color(0xFFeae2d5),
+              body: Center(
+                child: CircularProgressIndicator(
+                  color: Color(0xFF481d39),
+                ),
+              ),
+            );
+          }
+          return snapshot.data ?? const StartScreen();
+        },
+      ),
     );
+  }
+
+  Future<Widget> determineNextPage() async {
+    try {
+      final currentUser = FirebaseAuth.instance.currentUser;
+
+      if (currentUser == null) {
+        return const StartScreen();
+      }
+
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
+      if (!userDoc.exists) {
+        return const StartScreen();
+      }
+
+      return const HomeScreen();
+
+    } catch (e) {
+      return const StartScreen();
+    }
   }
 }

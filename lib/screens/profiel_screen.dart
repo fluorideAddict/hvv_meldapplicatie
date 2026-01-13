@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'start_screen.dart';
 import 'meldingen/mijn_meldingen_screen.dart';
 import 'inbox_screen.dart';
+import 'pinned_locations_screen.dart';
 
 class ProfielScreen extends StatefulWidget {
   const ProfielScreen({Key? key}) : super(key: key);
@@ -18,7 +19,6 @@ class _ProfielScreenState extends State<ProfielScreen> {
 
   String username = 'Laden...';
   String ageCategory = 'Laden...';
-  int avatar = 1;
   String memberSince = 'Laden...';
   int reportCount = 0;
 
@@ -74,7 +74,6 @@ class _ProfielScreenState extends State<ProfielScreen> {
         setState(() {
           username = data['username'] ?? 'Onbekend';
           ageCategory = data['ageCategory'] ?? 'Onbekend';
-          avatar = data['avatar'] ?? 1;
           memberSince = formattedDate;
           reportCount = reportsSnapshot.docs.length;
         });
@@ -334,6 +333,16 @@ class _ProfielScreenState extends State<ProfielScreen> {
                     await doc.reference.delete();
                   }
 
+                  // Verwijder alle gepinde locaties
+                  final pinsSnapshot = await _firestore
+                      .collection('pinned_locations')
+                      .where('userId', isEqualTo: currentUser.uid)
+                      .get();
+
+                  for (var doc in pinsSnapshot.docs) {
+                    await doc.reference.delete();
+                  }
+
                   // Log uit
                   await _auth.signOut();
 
@@ -374,6 +383,85 @@ class _ProfielScreenState extends State<ProfielScreen> {
                 ),
               ),
             ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildPinIconWithBadge() {
+    final currentUser = _auth.currentUser;
+
+    if (currentUser == null) {
+      return IconButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PinnedLocationsScreen(),
+            ),
+          );
+        },
+        icon: const Icon(
+          Icons.push_pin,
+          color: Colors.black,
+          size: 32,
+        ),
+      );
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore
+          .collection('pinned_locations')
+          .where('userId', isEqualTo: currentUser.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final pinCount = snapshot.data?.docs.length ?? 0;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PinnedLocationsScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(
+                Icons.push_pin,
+                color: Colors.black,
+                size: 32,
+              ),
+            ),
+            if (pinCount > 0)
+              Positioned(
+                right: 6,
+                top: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFf5a623),
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Center(
+                    child: Text(
+                      pinCount > 9 ? '9+' : '$pinCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         );
       },
@@ -616,17 +704,16 @@ class _ProfielScreenState extends State<ProfielScreen> {
                       height: 125,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFFeae2d5),
+                        color: const Color(0xFF481d39),
                         border: Border.all(
                           color: const Color(0xFF481d39),
                           width: 3,
                         ),
                       ),
-                      child: ClipOval(
-                        child: Image.asset(
-                          'assets/images/icoon$avatar.png',
-                          fit: BoxFit.cover,
-                        ),
+                      child: const Icon(
+                        Icons.person,
+                        size: 70,
+                        color: Color(0xFFeae2d5),
                       ),
                     ),
                   ),
@@ -639,14 +726,12 @@ class _ProfielScreenState extends State<ProfielScreen> {
                     child: SafeArea(
                       top: false,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            // Home icoon
                             IconButton(
                               onPressed: () {
-                                // Pop alle schermen tot we bij home zijn
                                 Navigator.popUntil(context, (route) => route.isFirst);
                               },
                               icon: const Icon(
@@ -655,20 +740,8 @@ class _ProfielScreenState extends State<ProfielScreen> {
                                 size: 32,
                               ),
                             ),
-                            // Wereld/globe icoon
-                            IconButton(
-                              onPressed: () {
-                                // TODO: Navigeer naar wereld/ontdek pagina
-                              },
-                              icon: const Icon(
-                                Icons.public,
-                                color: Colors.black,
-                                size: 32,
-                              ),
-                            ),
-                            // Inbox/berichten icoon met badge
+                            _buildPinIconWithBadge(),
                             _buildInboxIconWithBadge(),
-                            // Profiel icoon (actief)
                             IconButton(
                               onPressed: () {
                                 // Al op profiel
