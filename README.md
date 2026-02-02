@@ -20,11 +20,6 @@ Om dit te doen in Android Studio:
 2. Voor Hart Voor Verkeer: zet het apart geleverde .env (Environment Variables) bestand in hetzelfde map als main.dart. Stuur een van de contributors van deze repo een bericht  Mits je gebruik wilt maken van je eigen API keys, maak een bestand genaamd ".env" in het projectmap aan en plak het volgende er in:
     ```
     MAPBOX_ACCESS_TOKEN =
-    FIREBASE_WEB_TOKEN =
-    FIREBASE_ANDROID_TOKEN =
-    FIREBASE_IOS_TOKEN =
-    FIREBASE_MACOS_TOKEN =
-    FIREBASE_WINDOWS_TOKEN =
     ```
     Voeg bij elke regel een geldige API-key toe die daarbij hoort (bijv. MapBox API key bij MAPBOX_ACCESS_TOKEN)
 3. 
