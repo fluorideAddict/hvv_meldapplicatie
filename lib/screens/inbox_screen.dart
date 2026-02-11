@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'profiel_screen.dart';
+import 'pinned_locations_screen.dart';
 
 class InboxScreen extends StatefulWidget {
   const InboxScreen({Key? key}) : super(key: key);
@@ -17,12 +18,10 @@ class _InboxScreenState extends State<InboxScreen> {
   @override
   void initState() {
     super.initState();
-    // Doe niets in initState - laat notificaties gewoon zichtbaar
   }
 
   @override
   void dispose() {
-    // Markeer als gelezen wanneer gebruiker de inbox verlaat
     _markAllAsReadOnExit();
     super.dispose();
   }
@@ -32,14 +31,12 @@ class _InboxScreenState extends State<InboxScreen> {
     if (currentUser == null) return;
 
     try {
-      // Haal alle ongelezen notificaties op
       final unreadNotifications = await _firestore
           .collection('notifications')
           .where('userId', isEqualTo: currentUser.uid)
           .where('isRead', isEqualTo: false)
           .get();
 
-      // Markeer ze allemaal als gelezen
       for (var doc in unreadNotifications.docs) {
         await doc.reference.update({'isRead': true});
       }
@@ -96,13 +93,13 @@ class _InboxScreenState extends State<InboxScreen> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.error_outline,
                             size: 60,
                             color: Color(0xFFbd213f),
                           ),
-                          SizedBox(height: 16),
-                          Text(
+                          const SizedBox(height: 16),
+                          const Text(
                             'Er is een fout opgetreden',
                             style: TextStyle(
                               color: Color(0xFF481d39),
@@ -110,11 +107,11 @@ class _InboxScreenState extends State<InboxScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          SizedBox(height: 8),
+                          const SizedBox(height: 8),
                           Text(
                             '${snapshot.error}',
                             textAlign: TextAlign.center,
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: Color(0xFF481d39),
                               fontSize: 14,
                             ),
@@ -126,7 +123,7 @@ class _InboxScreenState extends State<InboxScreen> {
                 }
 
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(
+                  return const Center(
                     child: CircularProgressIndicator(
                       color: Color(0xFF481d39),
                     ),
@@ -189,14 +186,12 @@ class _InboxScreenState extends State<InboxScreen> {
             child: SafeArea(
               top: false,
               child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Home icoon
                     IconButton(
                       onPressed: () {
-                        // Pop alle schermen tot we bij home zijn
                         Navigator.popUntil(context, (route) => route.isFirst);
                       },
                       icon: const Icon(
@@ -205,18 +200,7 @@ class _InboxScreenState extends State<InboxScreen> {
                         size: 32,
                       ),
                     ),
-                    // Wereld/globe icoon
-                    IconButton(
-                      onPressed: () {
-                        // TODO: Navigeer naar wereld/ontdek pagina
-                      },
-                      icon: const Icon(
-                        Icons.public,
-                        color: Colors.black,
-                        size: 32,
-                      ),
-                    ),
-                    // Inbox/berichten icoon (actief)
+                    _buildPinIconWithBadge(),
                     IconButton(
                       onPressed: () {
                         // Al op inbox
@@ -227,7 +211,6 @@ class _InboxScreenState extends State<InboxScreen> {
                         size: 32,
                       ),
                     ),
-                    // Profiel icoon
                     IconButton(
                       onPressed: () {
                         Navigator.pushReplacement(
@@ -259,12 +242,91 @@ class _InboxScreenState extends State<InboxScreen> {
       body: Center(
         child: Text(
           message,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 18,
             color: Color(0xFF481d39),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPinIconWithBadge() {
+    final currentUser = _auth.currentUser;
+
+    if (currentUser == null) {
+      return IconButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PinnedLocationsScreen(),
+            ),
+          );
+        },
+        icon: const Icon(
+          Icons.push_pin,
+          color: Colors.black,
+          size: 32,
+        ),
+      );
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore
+          .collection('pinned_locations')
+          .where('userId', isEqualTo: currentUser.uid)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final pinCount = snapshot.data?.docs.length ?? 0;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PinnedLocationsScreen(),
+                  ),
+                );
+              },
+              icon: const Icon(
+                Icons.push_pin,
+                color: Colors.black,
+                size: 32,
+              ),
+            ),
+            if (pinCount > 0)
+              Positioned(
+                right: 6,
+                top: 6,
+                child: Container(
+                  padding: const EdgeInsets.all(4),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFf5a623),
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 18,
+                    minHeight: 18,
+                  ),
+                  child: Center(
+                    child: Text(
+                      pinCount > 9 ? '9+' : '$pinCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 
@@ -276,29 +338,27 @@ class _InboxScreenState extends State<InboxScreen> {
     final message = data['message'] ?? '';
     final createdAt = data['createdAt'] as Timestamp?;
 
-    // Bepaal icoon en kleur op basis van type
     IconData icon;
     Color accentColor;
 
     switch (type) {
       case 'like':
         icon = Icons.thumb_up;
-        accentColor = const Color(0xFFf5a623); // Geel/oranje
+        accentColor = const Color(0xFFf5a623);
         break;
       case 'report_created':
         icon = Icons.check_circle;
-        accentColor = const Color(0xFF4CAF50); // Groen
+        accentColor = const Color(0xFF4CAF50);
         break;
       case 'report_update':
         icon = Icons.notifications_active;
-        accentColor = const Color(0xFFbd213f); // Rood
+        accentColor = const Color(0xFFbd213f);
         break;
       default:
         icon = Icons.notifications;
-        accentColor = const Color(0xFF481d39); // Paars
+        accentColor = const Color(0xFF481d39);
     }
 
-    // Format tijd
     String timeAgo = 'Zojuist';
     if (createdAt != null) {
       final now = DateTime.now();
@@ -340,7 +400,6 @@ class _InboxScreenState extends State<InboxScreen> {
         ),
       ),
       onDismissed: (direction) async {
-        // Verwijder notificatie uit Firestore
         await _firestore.collection('notifications').doc(notification.id).delete();
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -352,9 +411,7 @@ class _InboxScreenState extends State<InboxScreen> {
         );
       },
       child: InkWell(
-        onTap: () {
-          // Optioneel: doe iets bij tap (nu niet nodig omdat al gelezen)
-        },
+        onTap: () {},
         child: Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
@@ -373,7 +430,6 @@ class _InboxScreenState extends State<InboxScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Icoon cirkel
               Container(
                 width: 50,
                 height: 50,
@@ -388,7 +444,6 @@ class _InboxScreenState extends State<InboxScreen> {
                 ),
               ),
               const SizedBox(width: 16),
-              // Tekst content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

@@ -4,11 +4,21 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import '../../services/melding_service.dart';
+import '../../services/pin_service.dart';
 import '../../widgets/meldingen/category_selector.dart';
 import '../../widgets/meldingen/photo_picker_widget.dart';
 
 class MeldingMakenScreen extends StatefulWidget {
-  const MeldingMakenScreen({Key? key}) : super(key: key);
+  final double? pinnedLatitude;
+  final double? pinnedLongitude;
+  final String? pinId;
+
+  const MeldingMakenScreen({
+    Key? key,
+    this.pinnedLatitude,
+    this.pinnedLongitude,
+    this.pinId,
+  }) : super(key: key);
 
   @override
   State<MeldingMakenScreen> createState() => _MeldingMakenScreenState();
@@ -16,6 +26,7 @@ class MeldingMakenScreen extends StatefulWidget {
 
 class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
   final MeldingService _meldingService = MeldingService();
+  final PinService _pinService = PinService();
   final TextEditingController _descriptionController = TextEditingController();
   final TextEditingController _addressController = TextEditingController();
 
@@ -38,7 +49,13 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
   @override
   void initState() {
     super.initState();
-    _getCurrentLocation();
+
+    // Als er een gepinde locatie is, gebruik die
+    if (widget.pinnedLatitude != null && widget.pinnedLongitude != null) {
+      _usePinnedLocation();
+    } else {
+      _getCurrentLocation();
+    }
   }
 
   @override
@@ -47,6 +64,38 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
     _addressController.dispose();
     _pageController.dispose();
     super.dispose();
+  }
+
+  /// Gebruik de gepinde locatie
+  Future<void> _usePinnedLocation() async {
+    setState(() => _isLoadingLocation = true);
+
+    try {
+      _latitude = widget.pinnedLatitude;
+      _longitude = widget.pinnedLongitude;
+
+      // Haal adres op via reverse geocoding
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        widget.pinnedLatitude!,
+        widget.pinnedLongitude!,
+      );
+      Placemark placemark = placemarks[0];
+
+      setState(() {
+        _address = '${placemark.street}, ${placemark.postalCode} ${placemark.subAdministrativeArea}';
+        _addressController.text = _address;
+        _isLoadingLocation = false;
+      });
+
+      print('✅ Using pinned location: $_latitude, $_longitude');
+    } catch (e) {
+      print('❌ Error using pinned location: $e');
+      setState(() {
+        _address = 'Gepinde locatie: ${widget.pinnedLatitude!.toStringAsFixed(6)}, ${widget.pinnedLongitude!.toStringAsFixed(6)}';
+        _addressController.text = _address;
+        _isLoadingLocation = false;
+      });
+    }
   }
 
   /// Haal de huidige GPS locatie op
@@ -76,7 +125,6 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
         _latitude = position.latitude;
         _longitude = position.longitude;
         _address = '${placemark.street}, ${placemark.postalCode} ${placemark.subAdministrativeArea}';
-        //_address = 'Locatie: ${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
         _addressController.text = _address;
         _isLoadingLocation = false;
       });
@@ -140,6 +188,12 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
       );
 
       if (result['success']) {
+        // Verwijder de pin als deze van een gepinde locatie komt
+        if (widget.pinId != null) {
+          await _pinService.deletePin(widget.pinId!);
+          print('✅ Pin deleted after melding creation');
+        }
+
         _showSuccessDialog();
       } else {
         _showError(result['error'] ?? 'Er is een fout opgetreden');
@@ -250,6 +304,9 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
             onPressed: () {
               Navigator.pop(context); // Close dialog
               Navigator.pop(context); // Close screen
+              if (widget.pinId != null) {
+                Navigator.popUntil(context, (route) => route.isFirst);
+              }
             },
             child: const Text(
               'Terug naar home',
@@ -286,9 +343,9 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
           icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Nieuwe melding',
-          style: TextStyle(
+        title: Text(
+          widget.pinId != null ? 'Melding van pin' : 'Nieuwe melding',
+          style: const TextStyle(
             fontFamily: 'Oswald',
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -368,9 +425,11 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          const Text(
-            'We gebruiken je huidige locatie. Je kunt deze later aanpassen.',
-            style: TextStyle(
+          Text(
+            widget.pinId != null
+                ? 'We gebruiken je gepinde locatie. Je kunt deze nog aanpassen.'
+                : 'We gebruiken je huidige locatie. Je kunt deze later aanpassen.',
+            style: const TextStyle(
               fontSize: 14,
               color: Colors.grey,
             ),
@@ -447,19 +506,20 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
 
             const SizedBox(height: 12),
 
-            // Refresh location button
-            OutlinedButton.icon(
-              onPressed: _getCurrentLocation,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Ververs locatie'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFF481d39),
-                side: const BorderSide(color: Color(0xFF481d39), width: 2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+            // Refresh location button (alleen tonen als het geen gepinde locatie is)
+            if (widget.pinId == null)
+              OutlinedButton.icon(
+                onPressed: _getCurrentLocation,
+                icon: const Icon(Icons.refresh),
+                label: const Text('Ververs locatie'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: const Color(0xFF481d39),
+                  side: const BorderSide(color: Color(0xFF481d39), width: 2),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
               ),
-            ),
           ],
         ],
       ),
