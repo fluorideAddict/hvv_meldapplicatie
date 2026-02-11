@@ -9,8 +9,7 @@ import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // ⭐ LAAD DE .ENV FILE
+  // Laad de .env file
   await dotenv.load(fileName: ".env");
 
   await Firebase.initializeApp(
