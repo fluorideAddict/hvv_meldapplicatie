@@ -528,16 +528,7 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
               color: Color(0xFF481d39),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            widget.pinId != null
-                ? 'We gebruiken je gepinde locatie. Sleep de kaart om de locatie aan te passen - het adres wordt automatisch bijgewerkt.'
-                : 'We gebruiken je huidige locatie. Sleep de kaart om de locatie aan te passen - het adres wordt automatisch bijgewerkt. Gebruik de knop op de kaart om terug te gaan naar je GPS locatie.',
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.grey,
-            ),
-          ),
+
           const SizedBox(height: 24),
 
           if (_isLoadingLocation)
@@ -552,7 +543,7 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
           else ...[
             // Map with center marker
             Container(
-              height: 250,
+              height: 400,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFF481d39), width: 2),
