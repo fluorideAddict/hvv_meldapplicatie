@@ -543,7 +543,7 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
           else ...[
             // Map with center marker
             Container(
-              height: 400,
+              height: 350,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: const Color(0xFF481d39), width: 2),
