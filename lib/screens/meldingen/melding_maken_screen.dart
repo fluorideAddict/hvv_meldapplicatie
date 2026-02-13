@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
@@ -41,6 +42,9 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
   double? _longitude;
   String _address = '';
   mb.MapboxMap? _mapController;
+  bool _isUpdatingAddress = false;
+  Timer? _addressUpdateTimer;
+  Timer? _geocodingTimer;
 
   // Page controller voor multi-step form
   final PageController _pageController = PageController();
@@ -63,6 +67,8 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
     _descriptionController.dispose();
     _addressController.dispose();
     _pageController.dispose();
+    _addressUpdateTimer?.cancel();
+    _geocodingTimer?.cancel();
     super.dispose();
   }
 
@@ -134,6 +140,104 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
       print('❌ Error getting location: $e');
       setState(() => _isLoadingLocation = false);
       _showError('Kon locatie niet ophalen');
+    }
+  }
+
+  /// Update map position based on manually entered address
+  Future<void> _updateMapFromAddress(String address) async {
+    if (address.trim().isEmpty || _mapController == null) return;
+
+    try {
+      // Try to geocode the address
+      List<Location> locations = await locationFromAddress(address);
+
+      if (locations.isNotEmpty) {
+        final location = locations.first;
+
+        // Update coordinates
+        _latitude = location.latitude;
+        _longitude = location.longitude;
+
+        // Move map to new location
+        await _mapController?.setCamera(
+          mb.CameraOptions(
+            center: mb.Point(
+              coordinates: mb.Position(_longitude!, _latitude!),
+            ),
+            zoom: 15,
+          ),
+        );
+
+        print('✅ Map updated to: $_latitude, $_longitude');
+      }
+    } catch (e) {
+      print('❌ Error geocoding address: $e');
+      // Silently fail - user might still be typing
+    }
+  }
+
+  /// Schedule address update after map stops moving (debounced)
+  void _scheduleAddressUpdate() {
+    // Cancel any existing timer
+    _addressUpdateTimer?.cancel();
+
+    // Start a new timer that will fire after 1 second of inactivity
+    _addressUpdateTimer = Timer(const Duration(milliseconds: 1000), () {
+      if (mounted) {
+        _updateAddressFromMapCenter();
+      }
+    });
+  }
+
+  /// Update address based on map center position
+  Future<void> _updateAddressFromMapCenter() async {
+    if (_mapController == null || _isUpdatingAddress) return;
+
+    if (!mounted) return;
+
+    setState(() => _isUpdatingAddress = true);
+
+    try {
+      final cameraState = await _mapController!.getCameraState();
+      final center = cameraState.center;
+
+      _latitude = center.coordinates.lat.toDouble();
+      _longitude = center.coordinates.lng.toDouble();
+
+      print('🗺️ Map center: $_latitude, $_longitude');
+
+      // Reverse geocode to get address
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        _latitude!,
+        _longitude!,
+      );
+
+      if (placemarks.isNotEmpty) {
+        Placemark placemark = placemarks[0];
+        final newAddress = '${placemark.street}, ${placemark.postalCode} ${placemark.subAdministrativeArea}';
+
+        print('📍 New address: $newAddress');
+
+        if (mounted) {
+          setState(() {
+            _address = newAddress;
+            _addressController.text = newAddress;
+          });
+        }
+      }
+    } catch (e) {
+      print('❌ Error updating address from map: $e');
+      // Fallback to coordinates
+      if (mounted) {
+        setState(() {
+          _address = '${_latitude!.toStringAsFixed(6)}, ${_longitude!.toStringAsFixed(6)}';
+          _addressController.text = _address;
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUpdatingAddress = false);
+      }
     }
   }
 
@@ -427,8 +531,8 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
           const SizedBox(height: 8),
           Text(
             widget.pinId != null
-                ? 'We gebruiken je gepinde locatie. Je kunt deze nog aanpassen.'
-                : 'We gebruiken je huidige locatie. Je kunt deze later aanpassen.',
+                ? 'We gebruiken je gepinde locatie. Sleep de kaart om de locatie aan te passen - het adres wordt automatisch bijgewerkt.'
+                : 'We gebruiken je huidige locatie. Sleep de kaart om de locatie aan te passen - het adres wordt automatisch bijgewerkt. Gebruik de knop op de kaart om terug te gaan naar je GPS locatie.',
             style: const TextStyle(
               fontSize: 14,
               color: Colors.grey,
@@ -446,7 +550,7 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
               ),
             )
           else ...[
-            // Map
+            // Map with center marker
             Container(
               height: 250,
               decoration: BoxDecoration(
@@ -455,25 +559,75 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(14),
-                child: mb.MapWidget(
-                  onMapCreated: (controller) {
-                    _mapController = controller;
-                    controller.scaleBar.updateSettings(
-                      mb.ScaleBarSettings(
-                        enabled: false,
-                      ),
-                    );
-                    if (_latitude != null && _longitude != null) {
-                      controller.setCamera(
-                        mb.CameraOptions(
-                          center: mb.Point(
-                            coordinates: mb.Position(_longitude!, _latitude!),
+                child: Stack(
+                  children: [
+                    mb.MapWidget(
+                      onMapCreated: (controller) {
+                        _mapController = controller;
+                        controller.scaleBar.updateSettings(
+                          mb.ScaleBarSettings(
+                            enabled: false,
                           ),
-                          zoom: 15,
+                        );
+                        if (_latitude != null && _longitude != null) {
+                          controller.setCamera(
+                            mb.CameraOptions(
+                              center: mb.Point(
+                                coordinates: mb.Position(_longitude!, _latitude!),
+                              ),
+                              zoom: 15,
+                            ),
+                          );
+                        }
+                      },
+                      onScrollListener: (mapContentGestureContext) {
+                        // Map is being dragged - schedule address update
+                        print('📱 Map scrolled, scheduling address update...');
+                        _scheduleAddressUpdate();
+                      },
+                    ),
+                    // Center marker (droplet)
+                    IgnorePointer(
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Image.asset(
+                              'assets/images/map-marker2.png',
+                              width: 48,
+                              height: 48,
+                            ),
+                            const SizedBox(height: 24), // Account for marker pointing down
+                          ],
                         ),
-                      );
-                    }
-                  },
+                      ),
+                    ),
+                    // Refresh GPS location button (floating)
+                    if (widget.pinId == null)
+                      Positioned(
+                        bottom: 16,
+                        right: 16,
+                        child: FloatingActionButton.small(
+                          onPressed: _isLoadingLocation ? null : _getCurrentLocation,
+                          backgroundColor: const Color(0xFFf5a623),
+                          heroTag: 'refresh_gps',
+                          child: _isLoadingLocation
+                              ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF481d39)),
+                            ),
+                          )
+                              : const Icon(
+                            Icons.my_location,
+                            color: Color(0xFF481d39),
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
               ),
             ),
@@ -501,17 +655,36 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
                   borderSide: const BorderSide(color: Color(0xFF481d39), width: 2),
                 ),
               ),
-              onChanged: (value) => _address = value,
+              onChanged: (value) {
+                _address = value;
+
+                // Cancel existing timer
+                _geocodingTimer?.cancel();
+
+                // Start new timer - geocode after 1.5 seconds of no typing
+                _geocodingTimer = Timer(const Duration(milliseconds: 1500), () {
+                  _updateMapFromAddress(value);
+                });
+              },
             ),
 
             const SizedBox(height: 12),
 
-            // Refresh location button (alleen tonen als het geen gepinde locatie is)
-            if (widget.pinId == null)
+            // Update address from map center button (alleen tonen als het geen gepinde locatie is)
+            /*if (widget.pinId == null)
               OutlinedButton.icon(
-                onPressed: _getCurrentLocation,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Ververs locatie'),
+                onPressed: _isUpdatingAddress ? null : _updateAddressFromMapCenter,
+                icon: _isUpdatingAddress
+                    ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF481d39)),
+                  ),
+                )
+                    : const Icon(Icons.refresh),
+                label: const Text('Update adres'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: const Color(0xFF481d39),
                   side: const BorderSide(color: Color(0xFF481d39), width: 2),
@@ -519,7 +692,7 @@ class _MeldingMakenScreenState extends State<MeldingMakenScreen> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-              ),
+              ),*/
           ],
         ],
       ),

@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'profiel_screen.dart';
 import 'inbox_screen.dart';
 import 'pinned_locations_screen.dart';
+import 'faq_screen.dart';
 import 'dart:async';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb;
 import 'package:geolocator/geolocator.dart' as gl;
@@ -48,9 +49,9 @@ class _HomeScreenState extends State<HomeScreen> {
     final token = dotenv.env['MAPBOX_ACCESS_TOKEN'] ?? '';
     if (token.isNotEmpty) {
       mb.MapboxOptions.setAccessToken(token);
-      print('Mapbox token set: ${token.substring(0, 20)}...');
+      /*print('Mapbox token set: ${token.substring(0, 20)}...');
     } else {
-      print('No Mapbox token found in .env');
+      print('No Mapbox token found in .env');*/
     }
 
     _determinePosition();
@@ -347,7 +348,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                   IconButton(
                     onPressed: () {
-                      // TODO: Help/info pagina openen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const FaqScreen(),
+                        ),
+                      );
                     },
                     icon: const Icon(
                       Icons.help_outline,
@@ -398,14 +404,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     right: 16,
                     child: MeldingCard(
                       melding: _selectedMelding!,
-                      //onTap: () {
-                      // optional: open detailed page
-                      //setState(() {
-                      //_showMeldingCard = false;
-                      //_selectedMelding = null;
-                      //});
-                      //},
-                      //showDeleteButton: true,
+                      showDeleteButton: false,
+                      onClose: () {
+                        setState(() {
+                          _showMeldingCard = false;
+                          _selectedMelding = null;
+                        });
+                      },
                     ),
                   ),
               ],

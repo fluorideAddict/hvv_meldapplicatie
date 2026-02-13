@@ -3,6 +3,7 @@
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
     show defaultTargetPlatform, kIsWeb, TargetPlatform;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -40,8 +41,8 @@ class DefaultFirebaseOptions {
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCT9zbX4Yj-7zZtN_R8-C0TSi0zRM9ADRI',
+  static final FirebaseOptions web = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_ACCESS_TOKEN_WEB'] ?? '',
     appId: '1:23833082834:web:45d09879071aab6910e60b',
     messagingSenderId: '23833082834',
     projectId: 'hart-voor-verkeer',
@@ -50,16 +51,16 @@ class DefaultFirebaseOptions {
     measurementId: 'G-5CSMQD9HZN',
   );
 
-  static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyDQe0qbVzJzy6SPmr1-f0ZCJXdltxDWeW4',
+  static final FirebaseOptions android = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_ACCESS_TOKEN_ANDROID'] ?? '',
     appId: '1:23833082834:android:82b24c9b58a4001c10e60b',
     messagingSenderId: '23833082834',
     projectId: 'hart-voor-verkeer',
     storageBucket: 'hart-voor-verkeer.firebasestorage.app',
   );
 
-  static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBovrz2CQ8398xvXfTWyNzAwvfE1KvhWJs',
+  static final FirebaseOptions ios = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_ACCESS_TOKEN_IOS'] ?? '',
     appId: '1:23833082834:ios:68cd826a5799dc4f10e60b',
     messagingSenderId: '23833082834',
     projectId: 'hart-voor-verkeer',
@@ -67,8 +68,8 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.hvvMeldapplicatie',
   );
 
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBovrz2CQ8398xvXfTWyNzAwvfE1KvhWJs',
+  static final FirebaseOptions macos = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_ACCESS_TOKEN_MACOS'] ?? '',
     appId: '1:23833082834:ios:68cd826a5799dc4f10e60b',
     messagingSenderId: '23833082834',
     projectId: 'hart-voor-verkeer',
@@ -76,8 +77,8 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.hvvMeldapplicatie',
   );
 
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyCT9zbX4Yj-7zZtN_R8-C0TSi0zRM9ADRI',
+  static final FirebaseOptions windows = FirebaseOptions(
+    apiKey: dotenv.env['FIREBASE_ACCESS_TOKEN_WINDOWS'] ?? '',
     appId: '1:23833082834:web:a76f1fb4e0cbfe1c10e60b',
     messagingSenderId: '23833082834',
     projectId: 'hart-voor-verkeer',

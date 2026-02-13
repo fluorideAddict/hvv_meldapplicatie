@@ -5,8 +5,6 @@ import 'start_screen.dart';
 import 'meldingen/mijn_meldingen_screen.dart';
 import 'inbox_screen.dart';
 import 'pinned_locations_screen.dart';
-import 'privacy_screen.dart';
-import 'over_ons_screen.dart';
 
 class ProfielScreen extends StatefulWidget {
   const ProfielScreen({Key? key}) : super(key: key);
@@ -651,37 +649,6 @@ class _ProfielScreenState extends State<ProfielScreen> {
                                   onTap: _showAgeCategoryDialog,
                                 ),
                                 const Spacer(),
-                                // Privacyverklaring en Over ons links
-                                _buildInfoRow(
-                                  icon: Icons.privacy_tip_outlined,
-                                  label: 'Privacyverklaring',
-                                  value: '',
-                                  isButton: true,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => const PrivacyScreen(viewOnly: true),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 12),
-                                _buildInfoRow(
-                                  icon: Icons.info_outline,
-                                  label: 'Over ons',
-                                  value: '',
-                                  isButton: true,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => const OverOnsScreen(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                const SizedBox(height: 16),
                                 // Verwijder account knop
                                 Padding(
                                   padding: const EdgeInsets.only(bottom: 100),
