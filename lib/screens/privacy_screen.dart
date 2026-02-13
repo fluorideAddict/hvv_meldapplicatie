@@ -3,7 +3,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'account_aanmaken_screen.dart';
 
 class PrivacyScreen extends StatefulWidget {
-  const PrivacyScreen({Key? key}) : super(key: key);
+  final bool viewOnly;
+  const PrivacyScreen({Key? key, this.viewOnly = false}) : super(key: key);
 
   @override
   State<PrivacyScreen> createState() => _PrivacyScreenState();
@@ -23,7 +24,7 @@ class _PrivacyScreenState extends State<PrivacyScreen> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
-    
+
     _controller = AnimationController(
       duration: const Duration(milliseconds: 1800),
       vsync: this,
@@ -198,12 +199,16 @@ class _PrivacyScreenState extends State<PrivacyScreen> with SingleTickerProvider
                     height: 56,
                     child: ElevatedButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AccountAanmakenScreen(),
-                          ),
-                        );
+                        if (widget.viewOnly) {
+                          Navigator.pop(context);
+                        } else {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AccountAanmakenScreen(),
+                            ),
+                          );
+                        }
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF481d39),
@@ -212,9 +217,9 @@ class _PrivacyScreenState extends State<PrivacyScreen> with SingleTickerProvider
                           borderRadius: BorderRadius.circular(28),
                         ),
                       ),
-                      child: const Text(
-                        'Ik ga akkoord',
-                        style: TextStyle(
+                      child: Text(
+                        widget.viewOnly ? 'Terug' : 'Ik ga akkoord',
+                        style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w600,
                         ),
